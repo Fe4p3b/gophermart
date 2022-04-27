@@ -8,8 +8,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Fe4p3b/gophermart/internal/api/handlers"
-	"github.com/Fe4p3b/gophermart/internal/service"
+	"github.com/Fe4p3b/gophermart/internal/api/handler"
+	authService "github.com/Fe4p3b/gophermart/internal/service/auth"
+	balanceService "github.com/Fe4p3b/gophermart/internal/service/balance"
+	orderService "github.com/Fe4p3b/gophermart/internal/service/order"
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
@@ -24,15 +26,15 @@ func main() {
 
 	r := chi.NewRouter()
 
-	logger.Sugar().Info("asdfdf")
+	as := authService.NewAuth(logger.Sugar())
+	os := orderService.New(logger.Sugar())
+	bs := balanceService.New(logger.Sugar())
 
-	as := service.NewAuth(logger.Sugar())
+	ah := handler.NewAuth(logger.Sugar(), as)
+	oh := handler.NewOrder(logger.Sugar(), os)
+	bh := handler.NewBalance(logger.Sugar(), bs)
 
-	ah := handlers.NewAuth(logger.Sugar(), as)
-	oh := handlers.NewOrders(logger.Sugar())
-	bh := handlers.NewBalance(logger.Sugar())
-
-	h := handlers.New(logger.Sugar())
+	h := handler.New(logger.Sugar())
 	h.SetupRouting(r, ah, oh, bh)
 
 	srv := http.Server{Addr: ":8080", Handler: r}

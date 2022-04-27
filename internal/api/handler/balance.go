@@ -1,14 +1,15 @@
-package handlers
+package handler
 
 import (
 	"net/http"
 
+	service "github.com/Fe4p3b/gophermart/internal/service/balance"
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 )
 
-var _ Handlers = &balance{}
-var _ Balance = &balance{}
+var _ Handler = (*balance)(nil)
+var _ Balance = (*balance)(nil)
 
 type Balance interface {
 	get(w http.ResponseWriter, r *http.Request)
@@ -18,10 +19,11 @@ type Balance interface {
 
 type balance struct {
 	l *zap.SugaredLogger
+	s service.Balance
 }
 
-func NewBalance(l *zap.SugaredLogger) *balance {
-	return &balance{l: l}
+func NewBalance(l *zap.SugaredLogger, s service.Balance) *balance {
+	return &balance{l: l, s: s}
 }
 
 func (b *balance) SetupRouting(r *chi.Mux) {
@@ -31,16 +33,16 @@ func (b *balance) SetupRouting(r *chi.Mux) {
 }
 
 func (b *balance) get(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(200)
+	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("get"))
 }
 
 func (b *balance) withdraw(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(200)
+	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("withdraw"))
 }
 
 func (b *balance) getWithdrawals(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(200)
+	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("getWithdrawals"))
 }
