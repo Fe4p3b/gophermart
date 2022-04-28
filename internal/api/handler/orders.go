@@ -18,10 +18,10 @@ type Order interface {
 
 type order struct {
 	l *zap.SugaredLogger
-	s service.Order
+	s service.OrderService
 }
 
-func NewOrder(l *zap.SugaredLogger, s service.Order) *order {
+func NewOrder(l *zap.SugaredLogger, s service.OrderService) *order {
 	return &order{l: l, s: s}
 }
 

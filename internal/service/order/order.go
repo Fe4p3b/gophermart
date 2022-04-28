@@ -1,26 +1,41 @@
 package order
 
-import "go.uber.org/zap"
+import (
+	"github.com/Fe4p3b/gophermart/internal/model"
+	"github.com/Fe4p3b/gophermart/internal/storage"
+	"go.uber.org/zap"
+)
 
-var _ Order = (*order)(nil)
+var _ OrderService = (*orderService)(nil)
 
-type Order interface {
-	List() ([]Order, error)
-	addBonus(id string) error
+type OrderService interface {
+	List(string) ([]model.Order, error)
+	AddAccrual(string, string) error
 }
 
-type order struct {
+type orderService struct {
 	l *zap.SugaredLogger
+	s storage.OrderRepository
 }
 
-func New(l *zap.SugaredLogger) *order {
-	return &order{l: l}
+func New(l *zap.SugaredLogger, s storage.OrderRepository) *orderService {
+	return &orderService{l: l, s: s}
 }
 
-func (o *order) List() ([]Order, error) {
-	return []Order{}, nil
+func (o *orderService) List(userId string) ([]model.Order, error) {
+	orders, err := o.s.GetOrdersForUser(userId)
+	if err != nil {
+		return nil, err
+	}
+
+	return orders, nil
 }
 
-func (o *order) addBonus(id string) error {
+func (o *orderService) AddAccrual(userId, id string) error {
+	sum := uint32(999)
+	if err := o.s.AddAccrual("asd", id, sum); err != nil {
+		return err
+	}
+
 	return nil
 }

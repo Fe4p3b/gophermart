@@ -19,10 +19,10 @@ type Balance interface {
 
 type balance struct {
 	l *zap.SugaredLogger
-	s service.Balance
+	s service.BalanceService
 }
 
-func NewBalance(l *zap.SugaredLogger, s service.Balance) *balance {
+func NewBalance(l *zap.SugaredLogger, s service.BalanceService) *balance {
 	return &balance{l: l, s: s}
 }
 

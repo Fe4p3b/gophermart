@@ -12,6 +12,7 @@ import (
 	authService "github.com/Fe4p3b/gophermart/internal/service/auth"
 	balanceService "github.com/Fe4p3b/gophermart/internal/service/balance"
 	orderService "github.com/Fe4p3b/gophermart/internal/service/order"
+	"github.com/Fe4p3b/gophermart/internal/storage/pg"
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
@@ -26,9 +27,14 @@ func main() {
 
 	r := chi.NewRouter()
 
-	as := authService.NewAuth(logger.Sugar())
-	os := orderService.New(logger.Sugar())
-	bs := balanceService.New(logger.Sugar())
+	db, err := pg.New("postgres://postgres:12345@localhost:5432/gophermart?sslmode=disable")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	as := authService.NewAuth(logger.Sugar(), db)
+	os := orderService.New(logger.Sugar(), db)
+	bs := balanceService.New(logger.Sugar(), db, db)
 
 	ah := handler.NewAuth(logger.Sugar(), as)
 	oh := handler.NewOrder(logger.Sugar(), os)

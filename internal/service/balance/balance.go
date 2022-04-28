@@ -2,29 +2,45 @@ package balance
 
 import (
 	"github.com/Fe4p3b/gophermart/internal/model"
+	"github.com/Fe4p3b/gophermart/internal/storage"
 	"go.uber.org/zap"
 )
 
-type Balance interface {
-	Get(userId string) error
+type BalanceService interface {
+	Get(userId string) (*model.Balance, error)
 }
 
-type balance struct {
+type balanceService struct {
 	l *zap.SugaredLogger
+	b storage.BalanceRepository
+	w storage.WithdrawalRepository
 }
 
-func New(l *zap.SugaredLogger) *balance {
-	return &balance{l: l}
+func New(l *zap.SugaredLogger, b storage.BalanceRepository, w storage.WithdrawalRepository) *balanceService {
+	return &balanceService{l: l, b: b, w: w}
 }
 
-func (b *balance) Get(userId string) error {
+func (b *balanceService) Get(userId string) (*model.Balance, error) {
+	ub, err := b.b.GetForUser(userId)
+	if err != nil {
+		return nil, err
+	}
+
+	return ub, nil
+}
+
+func (b *balanceService) Withdraw(userId, orderId string, sum uint32) error {
+	if err := b.w.AddWithdrawal(userId, model.Withdrawal{OrderID: orderId, Sum: sum}); err != nil {
+		return err
+	}
 	return nil
 }
 
-func (b *balance) Withdraw(orderId string, sum uint) error {
-	return nil
-}
+func (b *balanceService) getWithdrawals(userId string) ([]model.Withdrawal, error) {
+	w, err := b.w.GetWithdrawalsForUser(userId)
+	if err != nil {
+		return nil, err
+	}
 
-func (b *balance) getWithdrawals(userId string) ([]model.Bonus, error) {
-	return []model.Bonus{}, nil
+	return w, nil
 }

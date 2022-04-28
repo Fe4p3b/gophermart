@@ -21,10 +21,10 @@ type Auth interface {
 
 type auth struct {
 	l *zap.SugaredLogger
-	s service.Auth
+	s service.AuthService
 }
 
-func NewAuth(l *zap.SugaredLogger, s service.Auth) *auth {
+func NewAuth(l *zap.SugaredLogger, s service.AuthService) *auth {
 	return &auth{l: l, s: s}
 }
 
@@ -40,7 +40,7 @@ func (a *auth) register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := a.s.Register(cred.Login, cred.Password); err != nil {
-
+		a.l.Errorw("auth register handler", "error", err)
 		if errors.Is(err, service.ErrUserExists) {
 			http.Error(w, http.StatusText(http.StatusConflict), http.StatusConflict)
 			return
@@ -53,5 +53,16 @@ func (a *auth) register(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *auth) login(w http.ResponseWriter, r *http.Request) {
+	var cred model.Credentials
+	if err := json.NewDecoder(r.Body).Decode(&cred); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+	a.l.Info(cred)
+	if err := a.s.Login(cred.Login, cred.Password); err != nil {
+		a.l.Errorw("auth login handler", "error", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
 }
