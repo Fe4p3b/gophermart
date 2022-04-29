@@ -1,6 +1,9 @@
 package order
 
 import (
+	"time"
+
+	"github.com/Fe4p3b/gophermart/internal/api/accrual"
 	"github.com/Fe4p3b/gophermart/internal/model"
 	"github.com/Fe4p3b/gophermart/internal/storage"
 	"go.uber.org/zap"
@@ -16,10 +19,11 @@ type OrderService interface {
 type orderService struct {
 	l *zap.SugaredLogger
 	s storage.OrderRepository
+	a accrual.AccrualAcquirer
 }
 
-func New(l *zap.SugaredLogger, s storage.OrderRepository) *orderService {
-	return &orderService{l: l, s: s}
+func New(l *zap.SugaredLogger, s storage.OrderRepository, a accrual.AccrualAcquirer) *orderService {
+	return &orderService{l: l, s: s, a: a}
 }
 
 func (o *orderService) List(userId string) ([]model.Order, error) {
@@ -31,9 +35,17 @@ func (o *orderService) List(userId string) ([]model.Order, error) {
 	return orders, nil
 }
 
-func (o *orderService) AddAccrual(userId, id string) error {
-	sum := uint32(999)
-	if err := o.s.AddAccrual("asd", id, sum); err != nil {
+func (o *orderService) AddAccrual(userId, number string) error {
+	order := &model.Order{UserID: userId, Number: number, Status: model.StatusProcessed, UploadDate: time.Now()}
+	o.l.Infof("%#v", order)
+
+	err := o.a.GetAccrual(order)
+	if err != nil {
+		return err
+	}
+
+	o.l.Infof("%#v", order)
+	if err := o.s.AddAccrual(order); err != nil {
 		return err
 	}
 

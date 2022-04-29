@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"log"
 	"time"
 
 	"github.com/Fe4p3b/gophermart/internal/model"
@@ -38,16 +39,35 @@ func (p *pg) AddUser(u *model.User) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	sql := `INSERT INTO gophermart.users(login, password) VALUES($1, $2)`
+	tx, err := p.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
 
-	_, err := p.db.ExecContext(ctx, sql, u.Login, u.Passord)
-	if err == nil {
-		return nil
+	sql := `INSERT INTO gophermart.users(login, password) VALUES($1, $2) RETURNING id`
+
+	row := tx.QueryRowContext(ctx, sql, u.Login, u.Passord)
+
+	if err := row.Scan(&u.ID); err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
+			return auth.ErrUserExists
+		}
+
+		return err
 	}
 
-	var pgErr *pgconn.PgError
-	if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
-		return auth.ErrUserExists
+	log.Println(u)
+
+	sql = `INSERT INTO gophermart.balances(user_id) VALUES($1)`
+	_, err = tx.ExecContext(ctx, sql, u.ID)
+	if err != nil {
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
 	}
 
 	return err
@@ -98,7 +118,7 @@ func (p *pg) GetOrdersForUser(u string) ([]model.Order, error) {
 	return orders, nil
 }
 
-func (p *pg) AddAccrual(u, o string, s uint32) error {
+func (p *pg) AddAccrual(o *model.Order) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -106,26 +126,19 @@ func (p *pg) AddAccrual(u, o string, s uint32) error {
 	if err != nil {
 		return err
 	}
-	sql := `UPDATE gophermart.orders SET accrual = $1 WHERE id = $2`
-	if _, err := tx.ExecContext(ctx, sql, o, s); err != nil {
-		if err := tx.Rollback(); err != nil {
-			return err
-		}
+	defer tx.Rollback()
+
+	sql := `INSERT INTO gophermart.orders(user_id, number, status, accrual, upload_date) VALUES ($1, $2, $3, $4, $5)`
+	if _, err := tx.ExecContext(ctx, sql, o.UserID, o.Number, o.Status, o.Accrual, o.UploadDate); err != nil {
 		return err
 	}
 
-	sql = `UPDATE gophermart.balance SET current = current + $1 WHERE user_id = $2`
-	if _, err := tx.ExecContext(ctx, sql, s, u); err != nil {
-		if err := tx.Rollback(); err != nil {
-			return err
-		}
+	sql = `UPDATE gophermart.balances SET current = current + $1 WHERE user_id = $2`
+	if _, err := tx.ExecContext(ctx, sql, o.Accrual, o.UserID); err != nil {
 		return err
 	}
 
 	if err := tx.Commit(); err != nil {
-		if err := tx.Rollback(); err != nil {
-			return err
-		}
 		return err
 	}
 
@@ -155,29 +168,21 @@ func (p *pg) AddWithdrawal(u string, w model.Withdrawal) error {
 	if err != nil {
 		return err
 	}
+	defer tx.Rollback()
 
 	sql := `INSERT INTO gophermart.withdrawals(id, order_id, sum, date) VALUES($1, $2, $3, $4)`
 
 	if _, err := tx.ExecContext(ctx, sql, w.ID, w.OrderID, w.Sum, w.Date); err != nil {
-		if err := tx.Rollback(); err != nil {
-			return err
-		}
 		return err
 	}
 
 	sql = `UPDATE gophermart.balance SET current=current-$1 WHERE user_id=$2`
 
 	if _, err := tx.ExecContext(ctx, sql, w.Sum, u); err != nil {
-		if err := tx.Rollback(); err != nil {
-			return err
-		}
 		return err
 	}
 
 	if err = tx.Commit(); err != nil {
-		if err := tx.Rollback(); err != nil {
-			return err
-		}
 		return err
 	}
 

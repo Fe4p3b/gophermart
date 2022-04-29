@@ -57,7 +57,7 @@ func (a *auth) login(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&cred); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 	}
-	a.l.Info(cred)
+
 	if err := a.s.Login(cred.Login, cred.Password); err != nil {
 		a.l.Errorw("auth login handler", "error", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
