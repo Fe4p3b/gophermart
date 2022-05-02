@@ -36,15 +36,13 @@ func (o *orderService) List(userId string) ([]model.Order, error) {
 }
 
 func (o *orderService) AddAccrual(userId, number string) error {
-	order := &model.Order{UserID: userId, Number: number, Status: model.StatusProcessed, UploadDate: time.Now()}
-	o.l.Infof("%#v", order)
+	order := &model.Order{UserID: userId, Number: number, Status: model.StatusProcessing, UploadDate: time.Now()}
 
 	err := o.a.GetAccrual(order)
 	if err != nil {
 		return err
 	}
 
-	o.l.Infof("%#v", order)
 	if err := o.s.AddAccrual(order); err != nil {
 		return err
 	}

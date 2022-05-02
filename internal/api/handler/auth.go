@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/Fe4p3b/gophermart/internal/api/middleware"
 	"github.com/Fe4p3b/gophermart/internal/api/model"
 	service "github.com/Fe4p3b/gophermart/internal/service/auth"
 	"github.com/go-chi/chi/v5"
@@ -28,7 +29,7 @@ func NewAuth(l *zap.SugaredLogger, s service.AuthService) *auth {
 	return &auth{l: l, s: s}
 }
 
-func (a *auth) SetupRouting(r *chi.Mux) {
+func (a *auth) SetupRouting(r *chi.Mux, _ middleware.Middleware) {
 	r.Post("/api/user/register", a.register)
 	r.Post("/api/user/login", a.login)
 }
@@ -64,5 +65,6 @@ func (a *auth) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	http.SetCookie(w, &http.Cookie{Name: "token", Value: "9deb06e4-59b2-496e-9af4-17809f317e59"})
 	w.WriteHeader(http.StatusOK)
 }

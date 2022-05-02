@@ -92,7 +92,7 @@ func (p *pg) GetOrdersForUser(u string) ([]model.Order, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	sql := `SELECT id, user_id, number, status, accrual, upload_date FROM gophermart.orders WHERE user_id = $1`
+	sql := `SELECT number, user_id, number, status, accrual, upload_date FROM gophermart.orders WHERE user_id = $1`
 
 	rows, err := p.db.QueryContext(ctx, sql, u)
 	if err != nil {
@@ -104,10 +104,16 @@ func (p *pg) GetOrdersForUser(u string) ([]model.Order, error) {
 	var orders []model.Order
 	for rows.Next() {
 		var o model.Order
-		if err := rows.Scan(&o.ID, &o.UserID, &o.Number, &o.Status, &o.Accrual, &o.UploadDate); err != nil {
+		var s string
+		if err := rows.Scan(&o.Number, &o.UserID, &o.Number, &s, &o.Accrual, &o.UploadDate); err != nil {
 			return nil, err
 		}
 
+		status, err := model.ToOrderStatus(s)
+		if err != nil {
+			return nil, err
+		}
+		o.Status = status
 		orders = append(orders, o)
 	}
 
@@ -149,11 +155,16 @@ func (p *pg) GetForUser(u string) (*model.Balance, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	sql := `SELECT id, user_id, current WHERE user_id = $1`
+	sql := `SELECT b.id, b.user_id, b.current, COUNT(w.*)
+FROM gophermart.balances as b
+LEFT JOIN gophermart.withdrawals as w
+ON b.user_id = w.user_id
+WHERE b.user_id = $1
+GROUP BY b.id`
 	row := p.db.QueryRowContext(ctx, sql, u)
 
 	var balance model.Balance
-	if err := row.Scan(&balance.ID, &balance.UserID, &balance.Current); err != nil {
+	if err := row.Scan(&balance.ID, &balance.UserID, &balance.Current, &balance.Withdrawn); err != nil {
 		return nil, err
 	}
 
@@ -164,19 +175,21 @@ func (p *pg) AddWithdrawal(u string, w model.Withdrawal) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
+	log.Println(w)
+
 	tx, err := p.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 
-	sql := `INSERT INTO gophermart.withdrawals(id, order_id, sum, date) VALUES($1, $2, $3, $4)`
+	sql := `INSERT INTO gophermart.withdrawals(user_id, order_number, sum, date) VALUES($1, $2, $3, $4)`
 
-	if _, err := tx.ExecContext(ctx, sql, w.ID, w.OrderID, w.Sum, w.Date); err != nil {
+	if _, err := tx.ExecContext(ctx, sql, u, w.OrderNumber, w.Sum, w.Date); err != nil {
 		return err
 	}
 
-	sql = `UPDATE gophermart.balance SET current=current-$1 WHERE user_id=$2`
+	sql = `UPDATE gophermart.balances SET current=current-$1 WHERE user_id=$2`
 
 	if _, err := tx.ExecContext(ctx, sql, w.Sum, u); err != nil {
 		return err
@@ -193,7 +206,7 @@ func (p *pg) GetWithdrawalsForUser(u string) ([]model.Withdrawal, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	sql := `SELECT id, order_id, sum, date FROM gophermart.withdrawals as w, gophermart.orders as o WHERE w.order_id=o.order_id and o.user_id = $1`
+	sql := `SELECT id, order_number, sum, date FROM gophermart.withdrawals as w, gophermart.orders as o WHERE w.order_number=o.number and o.user_id = $1`
 
 	rows, err := p.db.QueryContext(ctx, sql, u)
 	if err != nil {
@@ -205,7 +218,7 @@ func (p *pg) GetWithdrawalsForUser(u string) ([]model.Withdrawal, error) {
 	var withdrawals []model.Withdrawal
 	for rows.Next() {
 		var w model.Withdrawal
-		if err := rows.Scan(&w.ID, &w.OrderID, &w.Sum, &w.Date); err != nil {
+		if err := rows.Scan(&w.ID, &w.OrderNumber, &w.Sum, &w.Date); err != nil {
 			return nil, err
 		}
 		withdrawals = append(withdrawals, w)

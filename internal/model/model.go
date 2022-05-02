@@ -1,9 +1,12 @@
 package model
 
 import (
+	"errors"
 	"fmt"
 	"time"
 )
+
+var ErrUnknownStatus = errors.New("unknown status")
 
 type User struct {
 	ID      string
@@ -12,16 +15,26 @@ type User struct {
 }
 
 type Balance struct {
-	ID      string
-	UserID  string
-	Current uint32
+	ID        string
+	UserID    string
+	Current   uint32
+	Withdrawn uint64
 }
 
 type Withdrawal struct {
-	ID      string
-	OrderID string
-	Sum     uint32
-	Date    time.Time
+	ID          string
+	OrderNumber string
+	UserID      string
+	Sum         uint64
+	Date        time.Time
+}
+
+type Order struct {
+	Number     string
+	UserID     string
+	Status     OrderStatus
+	Accrual    uint32
+	UploadDate time.Time
 }
 
 type OrderStatus int8
@@ -32,6 +45,20 @@ const (
 	StatusInvalid
 	StatusProcessed
 )
+
+func ToOrderStatus(s string) (OrderStatus, error) {
+	switch s {
+	case "NEW":
+		return StatusNew, nil
+	case "PROCESSING":
+		return StatusProcessing, nil
+	case "PROCESSED":
+		return StatusProcessed, nil
+	case "INVALID":
+		return StatusInvalid, nil
+	}
+	return 0, ErrUnknownStatus
+}
 
 func (o OrderStatus) String() string {
 	switch o {
@@ -46,13 +73,4 @@ func (o OrderStatus) String() string {
 	default:
 		return fmt.Sprintf("status unknown - %d", o)
 	}
-}
-
-type Order struct {
-	ID         string
-	UserID     string
-	Number     string
-	Status     OrderStatus
-	Accrual    uint32
-	UploadDate time.Time
 }

@@ -7,10 +7,9 @@ CREATE TABLE IF NOT EXISTS gophermart.users(
 );
 
 CREATE TABLE IF NOT EXISTS gophermart.orders(
-    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    number varchar(255) PRIMARY KEY,
     user_id uuid NOT NULL REFERENCES gophermart.users(id),
-    number varchar(55) NOT NULL UNIQUE,
-    status varchar(55) NOT NULL,
+    status INT NOT NULL,
     accrual INT,
     upload_date TIMESTAMP WITH TIME ZONE
 );
@@ -23,7 +22,8 @@ CREATE TABLE IF NOT EXISTS gophermart.balances(
 
 CREATE TABLE IF NOT EXISTS gophermart.withdrawals(
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    order_id uuid NOT NULL REFERENCES gophermart.orders(id),
+    order_number VARCHAR(255) NOT NULL REFERENCES gophermart.orders(number),
+    user_id uuid NOT NULL REFERENCES gophermart.users(id),
     sum INT NOT NULL,
     date TIMESTAMP WITH TIME ZONE
 );

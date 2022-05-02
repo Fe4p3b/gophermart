@@ -10,6 +10,7 @@ import (
 
 	"github.com/Fe4p3b/gophermart/internal/api/accrual"
 	"github.com/Fe4p3b/gophermart/internal/api/handler"
+	"github.com/Fe4p3b/gophermart/internal/api/middleware"
 	authService "github.com/Fe4p3b/gophermart/internal/service/auth"
 	balanceService "github.com/Fe4p3b/gophermart/internal/service/balance"
 	orderService "github.com/Fe4p3b/gophermart/internal/service/order"
@@ -33,7 +34,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	accrual := accrual.New(logger.Sugar(), "http://localhost:8080/api/orders")
+	accrual := accrual.New(logger.Sugar(), "http://localhost:8000/api/orders")
 
 	as := authService.NewAuth(logger.Sugar(), db)
 	os := orderService.New(logger.Sugar(), db, accrual)
@@ -43,10 +44,12 @@ func main() {
 	oh := handler.NewOrder(logger.Sugar(), os)
 	bh := handler.NewBalance(logger.Sugar(), bs)
 
-	h := handler.New(logger.Sugar())
-	h.SetupRouting(r, ah, oh, bh)
+	m := middleware.NewAuthMiddleware(as)
 
-	srv := http.Server{Addr: ":8000", Handler: r}
+	h := handler.New(logger.Sugar())
+	h.SetupRouting(r, m, ah, oh, bh)
+
+	srv := http.Server{Addr: ":8080", Handler: r}
 
 	errgroup, ctx := errgroup.WithContext(context.Background())
 	ctx, stop := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)

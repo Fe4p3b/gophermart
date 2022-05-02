@@ -8,6 +8,8 @@ import (
 
 type BalanceService interface {
 	Get(userId string) (*model.Balance, error)
+	Withdraw(string, string, uint64) error
+	GetWithdrawals(string) ([]model.Withdrawal, error)
 }
 
 type balanceService struct {
@@ -29,14 +31,14 @@ func (b *balanceService) Get(userId string) (*model.Balance, error) {
 	return ub, nil
 }
 
-func (b *balanceService) Withdraw(userId, orderId string, sum uint32) error {
-	if err := b.w.AddWithdrawal(userId, model.Withdrawal{OrderID: orderId, Sum: sum}); err != nil {
+func (b *balanceService) Withdraw(userId, orderNumber string, sum uint64) error {
+	if err := b.w.AddWithdrawal(userId, model.Withdrawal{OrderNumber: orderNumber, Sum: sum}); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (b *balanceService) getWithdrawals(userId string) ([]model.Withdrawal, error) {
+func (b *balanceService) GetWithdrawals(userId string) ([]model.Withdrawal, error) {
 	w, err := b.w.GetWithdrawalsForUser(userId)
 	if err != nil {
 		return nil, err
