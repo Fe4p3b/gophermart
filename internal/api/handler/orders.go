@@ -48,11 +48,13 @@ func (o *order) getOrders(w http.ResponseWriter, r *http.Request) {
 
 	orders, err := o.s.List(user)
 	if err != nil {
+		o.l.Errorw("List", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	if len(orders) == 0 {
+		o.l.Errorw("orders len", "len", len(orders))
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
@@ -65,6 +67,7 @@ func (o *order) getOrders(w http.ResponseWriter, r *http.Request) {
 
 	b, err := json.Marshal(jsonOrders)
 	if err != nil {
+		o.l.Errorw("Marshal", "err", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
