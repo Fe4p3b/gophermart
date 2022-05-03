@@ -44,12 +44,16 @@ func (o *orderService) List(userID string) ([]model.Order, error) {
 func (o *orderService) AddAccrual(userID, number string) error {
 	order := &model.Order{UserID: userID, Number: number, Status: model.StatusProcessing, UploadDate: time.Now()}
 
+	if err := o.s.AddAccrual(order); err != nil {
+		return err
+	}
+
 	go func(l *zap.SugaredLogger, order *model.Order) {
 		for {
-			err := o.a.GetAccrual(order)
+			n, err := o.a.GetAccrual(order)
 			if err != nil {
 				if errors.Is(err, accrual.ErrTooManyRequests) {
-					time.Sleep(order.UploadDate.Sub(time.Now().Add(3 * time.Second)))
+					time.Sleep(time.Duration(n) * time.Second)
 					continue
 				}
 				o.l.Errorf("error getting accrual - %v, error - %s", order, err)

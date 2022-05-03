@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/Fe4p3b/gophermart/internal/model"
 	"go.uber.org/zap"
@@ -17,7 +18,7 @@ var (
 )
 
 type AccrualAcquirer interface {
-	GetAccrual(*model.Order) error
+	GetAccrual(*model.Order) (int, error)
 }
 
 type accrual struct {
@@ -29,22 +30,28 @@ func New(l *zap.SugaredLogger, u string) *accrual {
 	return &accrual{baseURL: u, l: l}
 }
 
-func (a *accrual) GetAccrual(o *model.Order) error {
-	resp, err := http.Get(fmt.Sprintf("%s/%s", a.baseURL, o.Number))
+func (a *accrual) GetAccrual(o *model.Order) (int, error) {
+	resp, err := http.Get(fmt.Sprintf("%s/api/orders/%s", a.baseURL, o.Number))
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	if resp.StatusCode == http.StatusTooManyRequests {
-		return ErrTooManyRequests
+		s := resp.Header.Get("Retry-After")
+		n, err := strconv.Atoi(s)
+		if err != nil {
+			return 0, err
+		}
+		return n, ErrTooManyRequests
 	}
 
+	a.l.Infof("status - %v", resp.StatusCode)
 	a.l.Infof("before accrual - %v", o)
 	if err := json.NewDecoder(resp.Body).Decode(&o); err != nil {
-		return err
+		return 0, err
 	}
 	defer resp.Body.Close()
 	a.l.Infof("after accrual - %v", o)
 
-	return nil
+	return 0, nil
 }
