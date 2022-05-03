@@ -54,7 +54,7 @@ func (a *accrual) GetAccrual(o *model.Order) (int, error) {
 		if err != nil {
 			return 0, err
 		}
-		a.l.Infow("status no content %v", b)
+		a.l.Infof("status no content %v", b)
 
 		return 0, ErrNoOrder
 	}
