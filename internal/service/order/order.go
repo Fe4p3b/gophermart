@@ -50,17 +50,24 @@ func (o *orderService) AddAccrual(userID, number string) error {
 			if err != nil {
 				if errors.Is(err, accrual.ErrTooManyRequests) {
 					time.Sleep(order.UploadDate.Sub(time.Now().Add(3 * time.Second)))
+					continue
 				}
 				o.l.Errorf("error getting accrual - %v, error - %s", order, err)
-				continue
+				return
 			}
 
-			if order.Status != model.StatusProcessed {
+			switch order.Status {
+			case model.StatusInvalid:
+				return
+			case model.StatusProcessed:
+				break
+			default:
 				continue
 			}
 
 			if err := o.s.AddAccrual(order); err != nil {
 				o.l.Errorf("error adding accrual - %v, error - %s", order, err)
+				return
 			}
 			return
 		}
