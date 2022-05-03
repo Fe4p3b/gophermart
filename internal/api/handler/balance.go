@@ -41,13 +41,13 @@ func (b *balance) get(w http.ResponseWriter, r *http.Request) {
 
 	user, ok := r.Context().Value(middleware.Key).(string)
 	if !ok {
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	balance, err := b.s.Get(user)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
@@ -65,27 +65,27 @@ func (b *balance) get(w http.ResponseWriter, r *http.Request) {
 func (b *balance) withdraw(w http.ResponseWriter, r *http.Request) {
 	user, ok := r.Context().Value(middleware.Key).(string)
 	if !ok {
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	var withdrawal model.Withdrawal
 	if err := json.NewDecoder(r.Body).Decode(&withdrawal); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	if err := b.s.Withdraw(user, withdrawal.Order, withdrawal.Sum); err != nil {
 		if errors.Is(err, service.ErrNoOrder) {
-			http.Error(w, http.StatusText(http.StatusUnprocessableEntity), http.StatusUnprocessableEntity)
+			w.WriteHeader(http.StatusUnprocessableEntity)
 			return
 		}
 		if errors.Is(err, service.ErrInsufficientBalance) {
-			http.Error(w, http.StatusText(http.StatusPaymentRequired), http.StatusPaymentRequired)
+			w.WriteHeader(http.StatusPaymentRequired)
 			return
 		}
 
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
@@ -97,24 +97,24 @@ func (b *balance) getWithdrawals(w http.ResponseWriter, r *http.Request) {
 
 	user, ok := r.Context().Value(middleware.Key).(string)
 	if !ok {
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	withdrawals, err := b.s.GetWithdrawals(user)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	if len(withdrawals) == 0 {
-		http.Error(w, http.StatusText(http.StatusNoContent), http.StatusNoContent)
+		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 
 	bb, err := json.Marshal(model.ToWithdrawals(withdrawals))
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 

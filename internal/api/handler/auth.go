@@ -37,16 +37,16 @@ func (a *auth) SetupRouting(r *chi.Mux, _ middleware.Middleware) {
 func (a *auth) register(w http.ResponseWriter, r *http.Request) {
 	var cred model.Credentials
 	if err := json.NewDecoder(r.Body).Decode(&cred); err != nil {
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		w.WriteHeader(http.StatusBadRequest)
 	}
 
 	token, err := a.s.Register(cred.Login, cred.Password)
 	if err != nil {
 		if errors.Is(err, service.ErrUserExists) {
-			http.Error(w, http.StatusText(http.StatusConflict), http.StatusConflict)
+			w.WriteHeader(http.StatusConflict)
 			return
 		}
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
@@ -57,16 +57,16 @@ func (a *auth) register(w http.ResponseWriter, r *http.Request) {
 func (a *auth) login(w http.ResponseWriter, r *http.Request) {
 	var cred model.Credentials
 	if err := json.NewDecoder(r.Body).Decode(&cred); err != nil {
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		w.WriteHeader(http.StatusBadRequest)
 	}
 
 	token, err := a.s.Login(cred.Login, cred.Password)
 	if err != nil {
 		if errors.Is(err, service.ErrWrongCredentials) {
-			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 

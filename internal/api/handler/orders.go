@@ -42,18 +42,18 @@ func (o *order) getOrders(w http.ResponseWriter, r *http.Request) {
 
 	user, ok := r.Context().Value(middleware.Key).(string)
 	if !ok {
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	orders, err := o.s.List(user)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	if len(orders) == 0 {
-		http.Error(w, http.StatusText(http.StatusNoContent), http.StatusNoContent)
+		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 
@@ -65,8 +65,7 @@ func (o *order) getOrders(w http.ResponseWriter, r *http.Request) {
 
 	b, err := json.Marshal(jsonOrders)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		// http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
@@ -77,36 +76,36 @@ func (o *order) getOrders(w http.ResponseWriter, r *http.Request) {
 func (o *order) addBonus(w http.ResponseWriter, r *http.Request) {
 	user, ok := r.Context().Value(middleware.Key).(string)
 	if !ok {
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	b, err := io.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	if isDigitsOnly := luhn.OnlyDigits(b); !isDigitsOnly {
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	if isLuhnValid := luhn.Luhn(b); !isLuhnValid {
-		http.Error(w, http.StatusText(http.StatusUnprocessableEntity), http.StatusUnprocessableEntity)
+		w.WriteHeader(http.StatusUnprocessableEntity)
 		return
 	}
 
 	if err := o.s.AddAccrual(user, string(b)); err != nil {
 		if errors.Is(err, service.ErrOrderForUserExists) {
-			http.Error(w, http.StatusText(http.StatusOK), http.StatusOK)
+			w.WriteHeader(http.StatusOK)
 			return
 		} else if errors.Is(err, service.ErrOrderExistsForAnotherUser) {
-			http.Error(w, http.StatusText(http.StatusConflict), http.StatusConflict)
+			w.WriteHeader(http.StatusConflict)
 			return
 		}
 
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
