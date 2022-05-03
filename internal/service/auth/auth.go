@@ -7,7 +7,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"log"
 
 	"github.com/Fe4p3b/gophermart/internal/model"
 	"github.com/Fe4p3b/gophermart/internal/storage"
@@ -64,7 +63,7 @@ func (a *authService) Register(l string, p string) (string, error) {
 	if err := a.s.AddUser(u); err != nil {
 		return "", err
 	}
-	log.Println(u)
+
 	token, err := a.encrypt(u.ID)
 	if err != nil {
 		return "", err

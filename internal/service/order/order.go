@@ -23,10 +23,9 @@ type OrderService interface {
 }
 
 type orderService struct {
-	l  *zap.SugaredLogger
-	s  storage.OrderRepository
-	a  accrual.AccrualAcquirer
-	ch chan *model.Order
+	l *zap.SugaredLogger
+	s storage.OrderRepository
+	a accrual.AccrualAcquirer
 }
 
 func New(l *zap.SugaredLogger, s storage.OrderRepository, a accrual.AccrualAcquirer) *orderService {
@@ -44,35 +43,28 @@ func (o *orderService) List(userID string) ([]model.Order, error) {
 
 func (o *orderService) AddAccrual(userID, number string) error {
 	order := &model.Order{UserID: userID, Number: number, Status: model.StatusProcessing, UploadDate: time.Now()}
-	o.ch <- order
 
-	go func(l *zap.SugaredLogger) {
+	go func(l *zap.SugaredLogger, order *model.Order) {
 		for {
-			select {
-			case order := <-o.ch:
-				err := o.a.GetAccrual(order)
-				if err != nil {
-					if errors.Is(err, accrual.ErrTooManyRequests) {
-						time.Sleep(3 * time.Second)
-					}
-					o.l.Errorf("error getting accrual - %v", order)
-					o.ch <- order
-					break
+			err := o.a.GetAccrual(order)
+			if err != nil {
+				if errors.Is(err, accrual.ErrTooManyRequests) {
+					time.Sleep(order.UploadDate.Sub(time.Now().Add(3 * time.Second)))
 				}
-
-				if order.Status != model.StatusProcessed {
-					o.ch <- order
-					break
-				}
-
-				if err := o.s.AddAccrual(order); err != nil {
-					o.l.Errorf("error adding accrual - %v", order)
-				}
+				o.l.Errorf("error getting accrual - %v, error - %s", order, err)
+				continue
 			}
 
+			if order.Status != model.StatusProcessed {
+				continue
+			}
+
+			if err := o.s.AddAccrual(order); err != nil {
+				o.l.Errorf("error adding accrual - %v, error - %s", order, err)
+			}
 			return
 		}
-	}(o.l)
+	}(o.l, order)
 
 	return nil
 }
