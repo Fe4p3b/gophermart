@@ -3,6 +3,7 @@ module github.com/Fe4p3b/gophermart
 go 1.18
 
 require (
+	github.com/caarlos0/env/v6 v6.9.1
 	github.com/go-chi/chi/v5 v5.0.7
 	github.com/jackc/pgconn v1.12.0
 	github.com/jackc/pgerrcode v0.0.0-20220416144525-469b46aa5efa

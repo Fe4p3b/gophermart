@@ -8,6 +8,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/Fe4p3b/gophermart/cmd/gophermart/config"
 	"github.com/Fe4p3b/gophermart/internal/api/accrual"
 	"github.com/Fe4p3b/gophermart/internal/api/handler"
 	"github.com/Fe4p3b/gophermart/internal/api/middleware"
@@ -26,33 +27,41 @@ func main() {
 		log.Fatalf("can't initialize zap logger: %v", err)
 	}
 	defer logger.Sync()
+	sugaredLogger := logger.Sugar()
+
+	cfg, err := config.SetConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	sugaredLogger.Info(cfg)
 
 	r := chi.NewRouter()
 
-	db, err := pg.New("postgres://postgres:12345@localhost:5432/gophermart?sslmode=disable")
+	db, err := pg.New(cfg.DatabaseURI)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	accrual := accrual.New(logger.Sugar(), "http://localhost:8000/api/orders")
+	accrual := accrual.New(sugaredLogger, cfg.AccrualURL)
 
-	as, err := authService.NewAuth(logger.Sugar(), db, 14, []byte("x35k9f"))
+	as, err := authService.NewAuth(sugaredLogger, db, 14, []byte(cfg.Secret))
 	if err != nil {
 		log.Fatal(err)
 	}
-	os := orderService.New(logger.Sugar(), db, accrual)
-	bs := balanceService.New(logger.Sugar(), db, db)
+	os := orderService.New(sugaredLogger, db, accrual)
+	bs := balanceService.New(sugaredLogger, db, db)
 
-	ah := handler.NewAuth(logger.Sugar(), as)
-	oh := handler.NewOrder(logger.Sugar(), os)
-	bh := handler.NewBalance(logger.Sugar(), bs)
+	ah := handler.NewAuth(sugaredLogger, as)
+	oh := handler.NewOrder(sugaredLogger, os)
+	bh := handler.NewBalance(sugaredLogger, bs)
 
 	m := middleware.NewAuthMiddleware(as)
 
-	h := handler.New(logger.Sugar())
+	h := handler.New(sugaredLogger)
 	h.SetupRouting(r, m, ah, oh, bh)
 
-	srv := http.Server{Addr: ":8080", Handler: r}
+	srv := http.Server{Addr: cfg.Address, Handler: r}
 
 	errgroup, ctx := errgroup.WithContext(context.Background())
 	ctx, stop := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
