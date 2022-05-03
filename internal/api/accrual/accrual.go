@@ -1,12 +1,13 @@
 package accrual
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"strconv"
 
+	apiModel "github.com/Fe4p3b/gophermart/internal/api/model"
 	"github.com/Fe4p3b/gophermart/internal/model"
 	"go.uber.org/zap"
 )
@@ -47,24 +48,24 @@ func (a *accrual) GetAccrual(o *model.Order) (int, error) {
 		return n, ErrTooManyRequests
 	}
 
-	a.l.Infof("status - %v", resp.StatusCode)
-	// a.l.Infof("before accrual - %v", o)
-
-	b, err := io.ReadAll(resp.Body)
-	if err != nil {
-		a.l.Infof("error decoding %s", err)
+	if resp.StatusCode == http.StatusNoContent {
+		return 0, nil
 	}
-	a.l.Infof("body %s", b)
-	// if err := json.NewDecoder(resp.Body).Decode(&o); err != nil {
-	// 	b, err := io.ReadAll(resp.Body)
-	// 	if err != nil {
-	// 		a.l.Infof("error decoding %s", err)
-	// 	}
-	// 	a.l.Infof("body %s", b)
-	// 	return 0, err
-	// }
-	// defer resp.Body.Close()
-	// a.l.Infof("after accrual - %v", o)
+	a.l.Infof("before accrual - %v", o)
 
+	var order apiModel.Order
+	if err := json.NewDecoder(resp.Body).Decode(&order); err != nil {
+		return 0, err
+	}
+	defer resp.Body.Close()
+
+	status, err := model.ToOrderStatus(order.Status)
+	if err != nil {
+		return 0, err
+	}
+	o.Status = status
+	o.Accrual = order.Accrual
+
+	a.l.Infof("after accrual - %v", o)
 	return 0, nil
 }

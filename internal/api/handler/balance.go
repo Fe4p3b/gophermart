@@ -112,7 +112,7 @@ func (b *balance) getWithdrawals(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	bb, err := json.Marshal(model.ToWithdrawals(withdrawals))
+	bb, err := json.Marshal(model.ToAPIWithdrawals(withdrawals))
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return

@@ -29,14 +29,14 @@ type Withdrawal struct {
 	ProcessedAt string `json:"processed_at"`
 }
 
-func ToWithdrawal(w model.Withdrawal) Withdrawal {
+func ToAPIWithdrawal(w model.Withdrawal) Withdrawal {
 	return Withdrawal{Order: w.OrderNumber, Sum: w.Sum, ProcessedAt: w.Date.Format(time.RFC3339)}
 }
 
-func ToWithdrawals(withdrawals []model.Withdrawal) []Withdrawal {
+func ToAPIWithdrawals(withdrawals []model.Withdrawal) []Withdrawal {
 	w := make([]Withdrawal, 0)
 	for _, v := range withdrawals {
-		w = append(w, ToWithdrawal(v))
+		w = append(w, ToAPIWithdrawal(v))
 	}
 	return w
 }
