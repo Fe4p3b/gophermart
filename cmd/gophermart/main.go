@@ -51,6 +51,7 @@ func main() {
 
 	us := pg.NewUserStorage(db)
 	os := pg.NewOrderStorage(db)
+	bs := pg.NewBalanceStorage(db)
 
 	as, err := authService.NewAuth(sugaredLogger, us, 14, []byte(cfg.Secret))
 	if err != nil {
@@ -59,7 +60,7 @@ func main() {
 
 	ah := handler.NewAuth(sugaredLogger, as)
 	oh := handler.NewOrder(sugaredLogger, orderService.New(sugaredLogger, os, accrual))
-	bh := handler.NewBalance(sugaredLogger, balanceService.New(sugaredLogger, db, db))
+	bh := handler.NewBalance(sugaredLogger, balanceService.New(sugaredLogger, bs, db))
 
 	m := middleware.NewAuthMiddleware(as)
 
