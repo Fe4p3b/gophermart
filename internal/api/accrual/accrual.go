@@ -15,8 +15,8 @@ import (
 var (
 	_ AccrualAcquirer = (*accrual)(nil)
 
-	ErrTooManyRequests error = errors.New("too many requests")
-	ErrNoOrder         error = errors.New("no order")
+	ErrTooManyRequests error = errors.New("error too many requests")
+	ErrGettingOrder    error = errors.New("error no order")
 )
 
 type AccrualAcquirer interface {
@@ -48,8 +48,8 @@ func (a *accrual) GetAccrual(o *model.Order) (int, error) {
 		return n, ErrTooManyRequests
 	}
 
-	if resp.StatusCode == http.StatusOK {
-		return 0, nil
+	if resp.StatusCode != http.StatusOK {
+		return 0, ErrGettingOrder
 	}
 
 	var order apiModel.Order

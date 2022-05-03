@@ -50,12 +50,17 @@ func (o *orderService) AddOrder(userID, number string) error {
 
 	go func(l *zap.SugaredLogger, order *model.Order) {
 		for {
+			time.Sleep(5 * time.Second)
 			n, err := o.a.GetAccrual(order)
 			if err != nil {
 				if errors.Is(err, accrual.ErrTooManyRequests) {
 					time.Sleep(time.Duration(n) * time.Second)
 					continue
 				}
+				if errors.Is(err, accrual.ErrGettingOrder) {
+					continue
+				}
+
 				o.l.Errorw("error getting accrual", "order", order, "error", err)
 				continue
 			}
