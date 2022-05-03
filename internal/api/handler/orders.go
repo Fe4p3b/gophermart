@@ -9,6 +9,7 @@ import (
 	"github.com/Fe4p3b/gophermart/internal/api/middleware"
 	"github.com/Fe4p3b/gophermart/internal/api/model"
 	service "github.com/Fe4p3b/gophermart/internal/service/order"
+	"github.com/Fe4p3b/gophermart/pkg/luhn"
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 )
@@ -74,6 +75,16 @@ func (o *order) addBonus(w http.ResponseWriter, r *http.Request) {
 	b, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	if isDigitsOnly := luhn.OnlyDigits(b); isDigitsOnly {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	if isLuhnValid := luhn.Luhn(b); !isLuhnValid {
+		w.WriteHeader(http.StatusUnprocessableEntity)
 		return
 	}
 
