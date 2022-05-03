@@ -18,6 +18,7 @@ import (
 	withdrawalService "github.com/Fe4p3b/gophermart/internal/service/withdrawal"
 	"github.com/Fe4p3b/gophermart/internal/storage/pg"
 	"github.com/go-chi/chi/v5"
+	chiMiddleware "github.com/go-chi/chi/v5/middleware"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 )
@@ -38,6 +39,8 @@ func main() {
 	sugaredLogger.Infow("Initialized config", "config", cfg)
 
 	r := chi.NewRouter()
+
+	r.Use(chiMiddleware.Compress(5))
 
 	db, err := pg.New(cfg.DatabaseURI)
 	if err != nil {
