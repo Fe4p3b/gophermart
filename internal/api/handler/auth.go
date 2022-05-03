@@ -41,7 +41,6 @@ func (a *auth) register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := a.s.Register(cred.Login, cred.Password); err != nil {
-		a.l.Errorw("auth register handler", "error", err)
 		if errors.Is(err, service.ErrUserExists) {
 			http.Error(w, http.StatusText(http.StatusConflict), http.StatusConflict)
 			return
@@ -59,12 +58,18 @@ func (a *auth) login(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 
-	if err := a.s.Login(cred.Login, cred.Password); err != nil {
-		a.l.Errorw("auth login handler", "error", err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+	uuid, err := a.s.Login(cred.Login, cred.Password)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	http.SetCookie(w, &http.Cookie{Name: "token", Value: "9deb06e4-59b2-496e-9af4-17809f317e59"})
+	token, err := a.s.Encrypt(uuid)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	http.SetCookie(w, &http.Cookie{Name: "token", Value: token})
 	w.WriteHeader(http.StatusOK)
 }

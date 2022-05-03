@@ -21,7 +21,7 @@ type ContextKey string
 var Key ContextKey = "user"
 
 func NewAuthMiddleware(as auth.AuthService) *authMiddleware {
-	return &authMiddleware{}
+	return &authMiddleware{auth: as}
 }
 
 func (a *authMiddleware) Middleware(next http.HandlerFunc) http.HandlerFunc {
@@ -32,9 +32,13 @@ func (a *authMiddleware) Middleware(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		uuid := token.Value
+		uuid, err := a.auth.Decrypt(token.Value)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 
-		ctx := context.WithValue(r.Context(), Key, uuid)
+		ctx := context.WithValue(r.Context(), Key, string(uuid))
 		next.ServeHTTP(w, r.WithContext(ctx))
 	}
 }

@@ -36,7 +36,10 @@ func main() {
 
 	accrual := accrual.New(logger.Sugar(), "http://localhost:8000/api/orders")
 
-	as := authService.NewAuth(logger.Sugar(), db)
+	as, err := authService.NewAuth(logger.Sugar(), db, 14, []byte("x35k9f"))
+	if err != nil {
+		log.Fatal(err)
+	}
 	os := orderService.New(logger.Sugar(), db, accrual)
 	bs := balanceService.New(logger.Sugar(), db, db)
 
