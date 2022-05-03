@@ -213,7 +213,7 @@ func (p *pg) GetBalanceForUser(u string) (*model.Balance, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	sql := `SELECT b.id, b.user_id, b.current, COUNT(w.*)
+	sql := `SELECT b.id, b.user_id, b.current, COALESCE(SUM(w.sum),0) as withdrawn
 FROM gophermart.balances as b
 LEFT JOIN gophermart.withdrawals as w
 ON b.user_id = w.user_id
