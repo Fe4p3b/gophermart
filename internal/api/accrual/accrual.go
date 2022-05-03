@@ -1,7 +1,6 @@
 package accrual
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -49,14 +48,23 @@ func (a *accrual) GetAccrual(o *model.Order) (int, error) {
 	}
 
 	a.l.Infof("status - %v", resp.StatusCode)
-	a.l.Infof("before accrual - %v", o)
-	if err := json.NewDecoder(resp.Body).Decode(&o); err != nil {
-		b, err := io.ReadAll(resp.Body)
-		a.l.Errorf("error decoding %s", b)
-		return 0, err
+	// a.l.Infof("before accrual - %v", o)
+
+	b, err := io.ReadAll(resp.Body)
+	if err != nil {
+		a.l.Infof("error decoding %s", err)
 	}
-	defer resp.Body.Close()
-	a.l.Infof("after accrual - %v", o)
+	a.l.Infof("body %s", b)
+	// if err := json.NewDecoder(resp.Body).Decode(&o); err != nil {
+	// 	b, err := io.ReadAll(resp.Body)
+	// 	if err != nil {
+	// 		a.l.Infof("error decoding %s", err)
+	// 	}
+	// 	a.l.Infof("body %s", b)
+	// 	return 0, err
+	// }
+	// defer resp.Body.Close()
+	// a.l.Infof("after accrual - %v", o)
 
 	return 0, nil
 }
