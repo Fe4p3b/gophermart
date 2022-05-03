@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"log"
 	"os"
 	"time"
 
@@ -242,6 +243,7 @@ func (p *pg) AddWithdrawal(u string, w model.Withdrawal) error {
 	sql := `INSERT INTO gophermart.withdrawals(user_id, order_number, sum, date) VALUES($1, $2, $3, $4)`
 
 	if _, err := tx.ExecContext(ctx, sql, u, w.OrderNumber, w.Sum, w.Date); err != nil {
+		log.Printf("AddWithdrawal - %s", err)
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.ForeignKeyViolation {
 			return balance.ErrNoOrder
