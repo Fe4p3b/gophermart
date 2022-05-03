@@ -51,7 +51,7 @@ func (b *balance) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	bb := model.Balance{Current: float64(balance.Current) / 100, Withdrawn: balance.Withdrawn}
+	bb := model.Balance{Current: float64(balance.Current) / 100, Withdrawn: float64(balance.Withdrawn) / 100}
 
 	resp, err := json.Marshal(bb)
 	if err != nil {

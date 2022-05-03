@@ -48,7 +48,6 @@ func (o *order) getOrders(w http.ResponseWriter, r *http.Request) {
 
 	orders, err := o.s.List(user)
 	if err != nil {
-		o.l.Errorw("List", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
