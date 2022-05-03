@@ -19,7 +19,7 @@ var (
 
 type OrderService interface {
 	List(string) ([]model.Order, error)
-	AddAccrual(string, string) error
+	AddOrder(string, string) error
 }
 
 type orderService struct {
@@ -41,10 +41,10 @@ func (o *orderService) List(userID string) ([]model.Order, error) {
 	return orders, nil
 }
 
-func (o *orderService) AddAccrual(userID, number string) error {
+func (o *orderService) AddOrder(userID, number string) error {
 	order := &model.Order{UserID: userID, Number: number, Status: model.StatusProcessing, UploadDate: time.Now()}
 
-	if err := o.s.AddAccrual(order); err != nil {
+	if err := o.s.AddOrder(order); err != nil {
 		return err
 	}
 
@@ -56,7 +56,12 @@ func (o *orderService) AddAccrual(userID, number string) error {
 					time.Sleep(time.Duration(n) * time.Second)
 					continue
 				}
-				o.l.Errorf("error getting accrual - %v, error - %s", order, err)
+				o.l.Errorw("error getting accrual", "order", order, "error", err)
+				return
+			}
+
+			if err := o.s.UpdateOrder(order); err != nil {
+				o.l.Errorw("error adding accrual", "order", order, "error", err)
 				return
 			}
 
@@ -64,13 +69,12 @@ func (o *orderService) AddAccrual(userID, number string) error {
 			case model.StatusInvalid:
 				return
 			case model.StatusProcessed:
+				if err := o.s.UpdateBalanceForProcessedOrder(order); err != nil {
+					o.l.Errorw("error updating balance", "order", order, "error", err)
+					return
+				}
 			default:
 				continue
-			}
-
-			if err := o.s.AddAccrual(order); err != nil {
-				o.l.Errorf("error adding accrual - %v, error - %s", order, err)
-				return
 			}
 			return
 		}

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 
@@ -31,7 +32,9 @@ func New(l *zap.SugaredLogger, u string) *accrual {
 }
 
 func (a *accrual) GetAccrual(o *model.Order) (int, error) {
-	resp, err := http.Get(fmt.Sprintf("%s/api/orders/%s", a.baseURL, o.Number))
+	URL := fmt.Sprintf("%s/api/orders/%s", a.baseURL, o.Number)
+	a.l.Infof("api url: %s", URL)
+	resp, err := http.Get(URL)
 	if err != nil {
 		return 0, err
 	}
@@ -48,6 +51,8 @@ func (a *accrual) GetAccrual(o *model.Order) (int, error) {
 	a.l.Infof("status - %v", resp.StatusCode)
 	a.l.Infof("before accrual - %v", o)
 	if err := json.NewDecoder(resp.Body).Decode(&o); err != nil {
+		b, err := io.ReadAll(resp.Body)
+		a.l.Errorf("error decoding %s", b)
 		return 0, err
 	}
 	defer resp.Body.Close()

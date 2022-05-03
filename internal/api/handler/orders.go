@@ -20,7 +20,7 @@ var _ Order = (*order)(nil)
 
 type Order interface {
 	getOrders(w http.ResponseWriter, r *http.Request)
-	addBonus(w http.ResponseWriter, r *http.Request)
+	addOrder(w http.ResponseWriter, r *http.Request)
 }
 
 type order struct {
@@ -34,7 +34,7 @@ func NewOrder(l *zap.SugaredLogger, s service.OrderService) *order {
 
 func (o *order) SetupRouting(r *chi.Mux, m middleware.Middleware) {
 	r.Get("/api/user/orders", m.Middleware(o.getOrders))
-	r.Post("/api/user/orders", m.Middleware(o.addBonus))
+	r.Post("/api/user/orders", m.Middleware(o.addOrder))
 }
 
 func (o *order) getOrders(w http.ResponseWriter, r *http.Request) {
@@ -73,7 +73,7 @@ func (o *order) getOrders(w http.ResponseWriter, r *http.Request) {
 	w.Write(b)
 }
 
-func (o *order) addBonus(w http.ResponseWriter, r *http.Request) {
+func (o *order) addOrder(w http.ResponseWriter, r *http.Request) {
 	user, ok := r.Context().Value(middleware.Key).(string)
 	if !ok {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -96,7 +96,7 @@ func (o *order) addBonus(w http.ResponseWriter, r *http.Request) {
 	// 	return
 	// }
 
-	if err := o.s.AddAccrual(user, string(b)); err != nil {
+	if err := o.s.AddOrder(user, string(b)); err != nil {
 		if errors.Is(err, service.ErrOrderForUserExists) {
 			w.WriteHeader(http.StatusOK)
 			return

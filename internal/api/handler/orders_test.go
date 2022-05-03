@@ -114,7 +114,7 @@ func Test_orders_addBonus(t *testing.T) {
 			r := httptest.NewRequest(tt.args.method, tt.args.url, tt.args.body)
 			r.Header.Set("Content-Type", tt.args.contentType)
 
-			tt.o.addBonus(tt.args.w, r)
+			tt.o.addOrder(tt.args.w, r)
 			assert.Equal(t, tt.want.code, tt.args.w.Code)
 			assert.Equal(t, tt.want.contentType, tt.args.w.Header().Get("Content-Type"))
 			if tt.want.response != "" {

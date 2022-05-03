@@ -10,7 +10,9 @@ type UserRepository interface {
 
 type OrderRepository interface {
 	GetOrdersForUser(string) ([]model.Order, error)
-	AddAccrual(*model.Order) error
+	AddOrder(*model.Order) error
+	UpdateOrder(*model.Order) error
+	UpdateBalanceForProcessedOrder(*model.Order) error
 }
 
 type BalanceRepository interface {

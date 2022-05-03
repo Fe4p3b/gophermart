@@ -157,18 +157,12 @@ func (p *pg) GetOrdersForUser(u string) ([]model.Order, error) {
 	return orders, nil
 }
 
-func (p *pg) AddAccrual(o *model.Order) error {
+func (p *pg) AddOrder(o *model.Order) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	tx, err := p.db.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
 	sql := `INSERT INTO gophermart.orders(user_id, number, status, accrual, upload_date) VALUES ($1, $2, $3, $4, $5)`
-	if _, err := tx.ExecContext(ctx, sql, o.UserID, o.Number, o.Status, o.Accrual, o.UploadDate); err != nil {
+	if _, err := p.db.ExecContext(ctx, sql, o.UserID, o.Number, o.Status, o.Accrual, o.UploadDate); err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
 			sql := `SELECT user_id FROM gophermart.orders WHERE number=$1`
@@ -188,12 +182,27 @@ func (p *pg) AddAccrual(o *model.Order) error {
 		return err
 	}
 
-	sql = `UPDATE gophermart.balances SET current = current + $1 WHERE user_id = $2`
-	if _, err := tx.ExecContext(ctx, sql, o.Accrual, o.UserID); err != nil {
+	return nil
+}
+
+func (p *pg) UpdateOrder(o *model.Order) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	sql := `UPDATE gophermart.orders SET status = $1, accrual = $2 WHERE number = $3`
+
+	if _, err := p.db.ExecContext(ctx, sql, o.Status, o.Accrual, o.Number); err != nil {
 		return err
 	}
+	return nil
+}
 
-	if err := tx.Commit(); err != nil {
+func (p *pg) UpdateBalanceForProcessedOrder(o *model.Order) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	sql := `UPDATE gophermart.balances SET current = current + $1 WHERE user_id = $2`
+	if _, err := p.db.ExecContext(ctx, sql, o.Accrual, o.UserID); err != nil {
 		return err
 	}
 
