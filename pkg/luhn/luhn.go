@@ -12,15 +12,17 @@ func OnlyDigits(b []byte) bool {
 
 func Luhn(s []byte) bool {
 	sum := 0
+	isSecond := false
 	for i := len(s) - 1; i >= 0; i-- {
 		d := int(s[i] - '0')
 
-		if i%2 == 1 {
+		if isSecond {
 			d = d * 2
 		}
 		sum += d / 10
 		sum += d % 10
 
+		isSecond = !isSecond
 	}
 	return sum%10 == 0
 }
