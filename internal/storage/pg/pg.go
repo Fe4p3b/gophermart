@@ -3,6 +3,7 @@ package pg
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -30,21 +31,16 @@ func New(dsn string, folder string) (*pg, error) {
 		return nil, err
 	}
 
-	m, err := migrate.New(
-		fmt.Sprintf("file//%s", folder),
-		dsn,
-	)
+	m, err := migrate.New(fmt.Sprintf("file://%s", folder), dsn)
 	if err != nil {
-		log.Printf("new %v", err)
-		return nil, err
-	}
-
-	if err := pg.MigrationUp(); err != nil {
-		log.Printf("up %v", err)
 		return nil, err
 	}
 
 	pg.m = m
+
+	if err := pg.MigrationUp(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
+		return nil, err
+	}
 
 	return pg, nil
 }
