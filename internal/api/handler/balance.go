@@ -41,12 +41,14 @@ func (b *balance) get(w http.ResponseWriter, r *http.Request) {
 
 	user, ok := r.Context().Value(middleware.Key).(string)
 	if !ok {
+		b.l.Error("error getting user uuid from context")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	balance, err := b.s.Get(user)
 	if err != nil {
+		b.l.Errorw("error getting user balance", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -55,6 +57,7 @@ func (b *balance) get(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := json.Marshal(bb)
 	if err != nil {
+		b.l.Errorw("error marshalling response", "error", err)
 		return
 	}
 
@@ -65,12 +68,14 @@ func (b *balance) get(w http.ResponseWriter, r *http.Request) {
 func (b *balance) withdraw(w http.ResponseWriter, r *http.Request) {
 	user, ok := r.Context().Value(middleware.Key).(string)
 	if !ok {
+		b.l.Error("error getting user uuid from context")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	var withdrawal model.Withdrawal
 	if err := json.NewDecoder(r.Body).Decode(&withdrawal); err != nil {
+		b.l.Errorw("error decoding body", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -85,6 +90,7 @@ func (b *balance) withdraw(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		b.l.Errorw("error withdrawing", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -97,12 +103,14 @@ func (b *balance) getWithdrawals(w http.ResponseWriter, r *http.Request) {
 
 	user, ok := r.Context().Value(middleware.Key).(string)
 	if !ok {
+		b.l.Error("error getting user uuid from context")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	withdrawals, err := b.s.GetWithdrawals(user)
 	if err != nil {
+		b.l.Errorw("error getting withdrawals", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -114,6 +122,7 @@ func (b *balance) getWithdrawals(w http.ResponseWriter, r *http.Request) {
 
 	bb, err := json.Marshal(model.ToAPIWithdrawals(withdrawals))
 	if err != nil {
+		b.l.Errorw("error marshallin response withdrawals", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

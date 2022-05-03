@@ -42,13 +42,14 @@ func (o *order) getOrders(w http.ResponseWriter, r *http.Request) {
 
 	user, ok := r.Context().Value(middleware.Key).(string)
 	if !ok {
+		o.l.Error("error getting user uuid from context")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	orders, err := o.s.List(user)
 	if err != nil {
-		// o.l.Errorw("getOrders", "error", err)
+		o.l.Errorw("error listing orders", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -66,6 +67,7 @@ func (o *order) getOrders(w http.ResponseWriter, r *http.Request) {
 
 	b, err := json.Marshal(jsonOrders)
 	if err != nil {
+		o.l.Errorw("error marshalling orders", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -77,12 +79,14 @@ func (o *order) getOrders(w http.ResponseWriter, r *http.Request) {
 func (o *order) addOrder(w http.ResponseWriter, r *http.Request) {
 	user, ok := r.Context().Value(middleware.Key).(string)
 	if !ok {
+		o.l.Error("error getting user uuid from context")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	b, err := io.ReadAll(r.Body)
 	if err != nil {
+		o.l.Errorw("error reading body", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -106,6 +110,7 @@ func (o *order) addOrder(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		o.l.Errorw("error adding order", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

@@ -7,14 +7,23 @@ services:
       dockerfile: ./build/Dockerfile
     ports:
       - 8080:8080
-
+    volumes:
+      - ./migrations:/migrations
+    depends_on:
+      db:
+        condition: service_healthy
   db:
     image: postgres:14
     environment:
+      - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=12345
+      - POSTGRES_DB=gophermart
       - PGDATA=/var/lib/postgresql/data
     volumes:
-      - ./db/init:/docker-entrypoint-initdb.d
       - ./db/data:/var/lib/postgresql/data
     ports:
       - 5432:5432
+    healthcheck:
+      test: "pg_isready --username=postgres && psql --username=postgres --list"
+      timeout: 10s
+      retries: 20

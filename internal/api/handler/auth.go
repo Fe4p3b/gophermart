@@ -37,6 +37,7 @@ func (a *auth) SetupRouting(r *chi.Mux, _ middleware.Middleware) {
 func (a *auth) register(w http.ResponseWriter, r *http.Request) {
 	var cred model.Credentials
 	if err := json.NewDecoder(r.Body).Decode(&cred); err != nil {
+		a.l.Errorw("error decoding body", "error", err)
 		w.WriteHeader(http.StatusBadRequest)
 	}
 
@@ -46,6 +47,8 @@ func (a *auth) register(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusConflict)
 			return
 		}
+
+		a.l.Errorw("error registering user", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -57,6 +60,7 @@ func (a *auth) register(w http.ResponseWriter, r *http.Request) {
 func (a *auth) login(w http.ResponseWriter, r *http.Request) {
 	var cred model.Credentials
 	if err := json.NewDecoder(r.Body).Decode(&cred); err != nil {
+		a.l.Errorw("error decoding body", "error", err)
 		w.WriteHeader(http.StatusBadRequest)
 	}
 
@@ -66,6 +70,8 @@ func (a *auth) login(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
+
+		a.l.Errorw("error logging in user", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

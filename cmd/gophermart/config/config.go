@@ -8,7 +8,7 @@ import (
 
 type Config struct {
 	Address     string `env:"RUN_ADDRESS,required" envDefault:":8080"`
-	AccrualURL  string `env:"ACCRUAL_SYSTEM_ADDRESS,required" envDefault:"http://localhost:8000/api/orders"`
+	AccrualURL  string `env:"ACCRUAL_SYSTEM_ADDRESS,required" envDefault:"http://localhost:8000"`
 	DatabaseURI string `env:"DATABASE_URI,required" envDefault:"postgres://postgres:12345@localhost:5432/gophermart?sslmode=disable"`
 	Secret      string `env:"SECRET" envDefault:"x35k9f"`
 }

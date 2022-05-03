@@ -31,27 +31,27 @@ func main() {
 
 	cfg, err := config.SetConfig()
 	if err != nil {
-		log.Fatal(err)
+		sugaredLogger.Fatal(err)
 	}
 
-	sugaredLogger.Info(cfg)
+	sugaredLogger.Infow("Initialized config", "config", cfg)
 
 	r := chi.NewRouter()
 
 	db, err := pg.New(cfg.DatabaseURI)
 	if err != nil {
-		log.Fatal(err)
+		sugaredLogger.Fatalw("error initializing db", "error", err)
 	}
 
 	if err := db.InitialMigration(); err != nil {
-		log.Fatal(err)
+		sugaredLogger.Fatalw("error applying migration", "error", err)
 	}
 
 	accrual := accrual.New(sugaredLogger, cfg.AccrualURL)
 
 	as, err := authService.NewAuth(sugaredLogger, db, 14, []byte(cfg.Secret))
 	if err != nil {
-		log.Fatal(err)
+		sugaredLogger.Fatalw("error creating auth service", "error", err)
 	}
 	os := orderService.New(sugaredLogger, db, accrual)
 	bs := balanceService.New(sugaredLogger, db, db)
@@ -72,6 +72,7 @@ func main() {
 	defer stop()
 
 	errgroup.Go(func() error {
+		sugaredLogger.Infof("started server at address - %s", cfg.Address)
 		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
 			return err
 		}
@@ -87,6 +88,6 @@ func main() {
 	})
 
 	if err := errgroup.Wait(); err != nil {
-		log.Fatal(err)
+		sugaredLogger.Fatalw("error while running server", "error", err)
 	}
 }
