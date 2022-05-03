@@ -105,7 +105,6 @@ func (o *order) addOrder(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		o.l.Errorw("AddOrder", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
