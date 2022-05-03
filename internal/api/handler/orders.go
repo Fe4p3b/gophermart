@@ -91,13 +91,12 @@ func (o *order) addOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// if isLuhnValid := luhn.Luhn(b); !isLuhnValid {
-	// 	w.WriteHeader(http.StatusUnprocessableEntity)
-	// 	return
-	// }
+	if isLuhnValid := luhn.Luhn(b); !isLuhnValid {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		return
+	}
 
 	if err := o.s.AddOrder(user, string(b)); err != nil {
-		o.l.Errorw("AddOrder", "error", err)
 		if errors.Is(err, service.ErrOrderForUserExists) {
 			w.WriteHeader(http.StatusOK)
 			return
@@ -106,6 +105,7 @@ func (o *order) addOrder(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		o.l.Errorw("AddOrder", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
