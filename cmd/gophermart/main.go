@@ -42,32 +42,24 @@ func main() {
 
 	r.Use(chiMiddleware.Compress(5))
 
-	db, err := pg.New(cfg.DatabaseURI)
+	db, err := pg.New(cfg.DatabaseURI, cfg.MigrationsFolder)
 	if err != nil {
 		sugaredLogger.Fatalw("error initializing db", "error", err)
 	}
 
-	if err := db.InitialMigration(); err != nil {
-		sugaredLogger.Fatalw("error applying migration", "error", err)
-	}
-
 	accrual := accrual.New(sugaredLogger, cfg.AccrualURL)
 
-	us := pg.NewUserStorage(db)
-	os := pg.NewOrderStorage(db)
-	bs := pg.NewBalanceStorage(db)
-	ws := pg.NewWithdrawalStorage(db)
-
-	as, err := authService.NewAuth(sugaredLogger, us, 14, []byte(cfg.Secret))
+	as, err := authService.NewAuth(sugaredLogger, pg.NewUserStorage(db), 14, []byte(cfg.Secret))
 	if err != nil {
 		sugaredLogger.Fatalw("error creating auth service", "error", err)
 	}
 
-	bService := balanceService.New(sugaredLogger, bs)
+	bs := balanceService.New(sugaredLogger, pg.NewBalanceStorage(db))
+
 	ah := handler.NewAuth(sugaredLogger, as)
-	oh := handler.NewOrder(sugaredLogger, orderService.New(sugaredLogger, os, accrual))
-	bh := handler.NewBalance(sugaredLogger, bService)
-	wh := handler.NewWithdrawal(sugaredLogger, withdrawalService.New(sugaredLogger, ws, bService))
+	oh := handler.NewOrder(sugaredLogger, orderService.New(sugaredLogger, pg.NewOrderStorage(db), accrual))
+	bh := handler.NewBalance(sugaredLogger, bs)
+	wh := handler.NewWithdrawal(sugaredLogger, withdrawalService.New(sugaredLogger, pg.NewWithdrawalStorage(db), bs))
 
 	m := middleware.NewAuthMiddleware(as)
 
