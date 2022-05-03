@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 
@@ -16,7 +17,7 @@ var (
 	_ AccrualAcquirer = (*accrual)(nil)
 
 	ErrTooManyRequests error = errors.New("too many requests")
-	ErrNoOrder         error = errors.New("order no order")
+	ErrNoOrder         error = errors.New("no order")
 )
 
 type AccrualAcquirer interface {
@@ -49,6 +50,12 @@ func (a *accrual) GetAccrual(o *model.Order) (int, error) {
 	}
 
 	if resp.StatusCode == http.StatusNoContent {
+		b, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return 0, err
+		}
+		a.l.Infow("status no content %v", b)
+
 		return 0, ErrNoOrder
 	}
 
