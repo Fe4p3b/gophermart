@@ -5,6 +5,7 @@ import "github.com/Fe4p3b/gophermart/internal/model"
 type UserRepository interface {
 	AddUser(*model.User) error
 	GetUserByLogin(string) (*model.User, error)
+	VerifyUser(string) error
 }
 
 type OrderRepository interface {

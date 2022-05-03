@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"log"
 	"time"
 
 	"github.com/Fe4p3b/gophermart/internal/model"
@@ -58,8 +57,6 @@ func (p *pg) AddUser(u *model.User) error {
 		return err
 	}
 
-	log.Println(u)
-
 	sql = `INSERT INTO gophermart.balances(user_id) VALUES($1)`
 	_, err = tx.ExecContext(ctx, sql, u.ID)
 	if err != nil {
@@ -86,6 +83,22 @@ func (p *pg) GetUserByLogin(l string) (*model.User, error) {
 	}
 
 	return &u, nil
+}
+
+func (p *pg) VerifyUser(u string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	sql := `SELECT id FROM gophermart.users WHERE id=$1`
+
+	row := p.db.QueryRowContext(ctx, sql, u)
+	var uuid string
+
+	if err := row.Scan(&uuid); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (p *pg) GetOrdersForUser(u string) ([]model.Order, error) {
@@ -175,8 +188,6 @@ func (p *pg) AddWithdrawal(u string, w model.Withdrawal) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	log.Println(w)
-
 	tx, err := p.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -206,7 +217,7 @@ func (p *pg) GetWithdrawalsForUser(u string) ([]model.Withdrawal, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	sql := `SELECT id, order_number, sum, date FROM gophermart.withdrawals as w, gophermart.orders as o WHERE w.order_number=o.number and o.user_id = $1`
+	sql := `SELECT id, order_number, sum, date FROM gophermart.withdrawals WHERE user_id = $1`
 
 	rows, err := p.db.QueryContext(ctx, sql, u)
 	if err != nil {

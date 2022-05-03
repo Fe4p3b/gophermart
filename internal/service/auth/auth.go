@@ -24,6 +24,7 @@ var (
 type AuthService interface {
 	Register(string, string) error
 	Login(string, string) (string, error)
+	VerifyUser(string) error
 	Encrypt(src string) (string, error)
 	Decrypt(src string) ([]byte, error)
 }
@@ -77,6 +78,10 @@ func (a *authService) Login(l string, p string) (string, error) {
 	}
 
 	return u.ID, nil
+}
+
+func (a *authService) VerifyUser(user string) error {
+	return a.s.VerifyUser(user)
 }
 
 func (a *authService) hashPassword(p string) (string, error) {
