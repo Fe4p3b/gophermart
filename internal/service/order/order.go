@@ -60,7 +60,6 @@ func (o *orderService) AddAccrual(userID, number string) error {
 			case model.StatusInvalid:
 				return
 			case model.StatusProcessed:
-				break
 			default:
 				continue
 			}
