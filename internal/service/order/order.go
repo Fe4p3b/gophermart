@@ -42,7 +42,7 @@ func (o *orderService) List(userID string) ([]model.Order, error) {
 }
 
 func (o *orderService) AddOrder(userID, number string) error {
-	order := &model.Order{UserID: userID, Number: number, Status: model.StatusRegistered, UploadDate: time.Now()}
+	order := &model.Order{UserID: userID, Number: number, Status: model.StatusNew, UploadDate: time.Now()}
 
 	if err := o.s.AddOrder(order); err != nil {
 		return err
@@ -50,7 +50,6 @@ func (o *orderService) AddOrder(userID, number string) error {
 
 	go func(l *zap.SugaredLogger, order *model.Order) {
 		for {
-			time.Sleep(5 * time.Second)
 			n, err := o.a.GetAccrual(order)
 			if err != nil {
 				if errors.Is(err, accrual.ErrTooManyRequests) {
