@@ -42,7 +42,12 @@ func (o *orderService) List(userID string) ([]model.Order, error) {
 }
 
 func (o *orderService) AddOrder(userID, number string) error {
-	order := &model.Order{UserID: userID, Number: number, Status: model.StatusProcessing, UploadDate: time.Now()}
+	order := &model.Order{UserID: userID, Number: number, UploadDate: time.Now()}
+
+	_, err := o.a.GetAccrual(order)
+	if err != nil {
+		return err
+	}
 
 	if err := o.s.AddOrder(order); err != nil {
 		return err

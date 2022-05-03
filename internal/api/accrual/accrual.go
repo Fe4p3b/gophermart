@@ -33,7 +33,6 @@ func New(l *zap.SugaredLogger, u string) *accrual {
 
 func (a *accrual) GetAccrual(o *model.Order) (int, error) {
 	URL := fmt.Sprintf("%s/api/orders/%s", a.baseURL, o.Number)
-	a.l.Infof("api url: %s", URL)
 	resp, err := http.Get(URL)
 	if err != nil {
 		return 0, err
@@ -64,7 +63,7 @@ func (a *accrual) GetAccrual(o *model.Order) (int, error) {
 		return 0, err
 	}
 	o.Status = status
-	o.Accrual = order.Accrual
+	o.Accrual = order.Accrual * 100
 
 	a.l.Infof("after accrual - %v", o)
 	return 0, nil
