@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"time"
@@ -49,6 +50,11 @@ func (o *order) getOrders(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if len(orders) == 0 {
+		http.Error(w, http.StatusText(http.StatusNoContent), http.StatusNoContent)
+		return
+	}
+
 	jsonOrders := make([]model.Order, 0)
 
 	for _, v := range orders {
@@ -78,17 +84,25 @@ func (o *order) addBonus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if isDigitsOnly := luhn.OnlyDigits(b); isDigitsOnly {
-		w.WriteHeader(http.StatusBadRequest)
+	if isDigitsOnly := luhn.OnlyDigits(b); !isDigitsOnly {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
 
 	if isLuhnValid := luhn.Luhn(b); !isLuhnValid {
-		w.WriteHeader(http.StatusUnprocessableEntity)
+		http.Error(w, http.StatusText(http.StatusUnprocessableEntity), http.StatusUnprocessableEntity)
 		return
 	}
 
 	if err := o.s.AddAccrual(user, string(b)); err != nil {
+		if errors.Is(err, service.ErrOrderForUserExists) {
+			http.Error(w, http.StatusText(http.StatusOK), http.StatusOK)
+			return
+		} else if errors.Is(err, service.ErrOrderExistsForAnotherUser) {
+			http.Error(w, http.StatusText(http.StatusConflict), http.StatusConflict)
+			return
+		}
+
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

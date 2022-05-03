@@ -32,18 +32,13 @@ func (a *authMiddleware) Middleware(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		uuid, err := a.auth.Decrypt(token.Value)
+		uuid, err := a.auth.VerifyUser(token.Value)
 		if err != nil {
 			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 			return
 		}
 
-		if err := a.auth.VerifyUser(string(uuid)); err != nil {
-			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
-			return
-		}
-
-		ctx := context.WithValue(r.Context(), Key, string(uuid))
+		ctx := context.WithValue(r.Context(), Key, uuid)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	}
 }

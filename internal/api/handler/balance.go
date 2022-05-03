@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/Fe4p3b/gophermart/internal/api/middleware"
@@ -73,6 +74,15 @@ func (b *balance) withdraw(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := b.s.Withdraw(user, withdrawal.Order, withdrawal.Sum); err != nil {
+		if errors.Is(err, service.ErrNoOrder) {
+			http.Error(w, http.StatusText(http.StatusUnprocessableEntity), http.StatusUnprocessableEntity)
+			return
+		}
+		if errors.Is(err, service.ErrInsufficientBalance) {
+			http.Error(w, http.StatusText(http.StatusPaymentRequired), http.StatusPaymentRequired)
+			return
+		}
+
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -90,6 +100,11 @@ func (b *balance) getWithdrawals(w http.ResponseWriter, r *http.Request) {
 	withdrawals, err := b.s.GetWithdrawals(user)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if len(withdrawals) == 0 {
+		http.Error(w, http.StatusText(http.StatusNoContent), http.StatusNoContent)
 		return
 	}
 

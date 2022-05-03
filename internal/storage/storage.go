@@ -14,7 +14,7 @@ type OrderRepository interface {
 }
 
 type BalanceRepository interface {
-	GetForUser(string) (*model.Balance, error)
+	GetBalanceForUser(string) (*model.Balance, error)
 }
 
 type WithdrawalRepository interface {

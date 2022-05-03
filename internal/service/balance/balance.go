@@ -1,9 +1,18 @@
 package balance
 
 import (
+	"errors"
+
 	"github.com/Fe4p3b/gophermart/internal/model"
 	"github.com/Fe4p3b/gophermart/internal/storage"
 	"go.uber.org/zap"
+)
+
+var _ BalanceService = (*balanceService)(nil)
+
+var (
+	ErrNoOrder             error = errors.New("order with such number doesn't exist")
+	ErrInsufficientBalance error = errors.New("insufficient balance")
 )
 
 type BalanceService interface {
@@ -23,7 +32,7 @@ func New(l *zap.SugaredLogger, b storage.BalanceRepository, w storage.Withdrawal
 }
 
 func (b *balanceService) Get(userId string) (*model.Balance, error) {
-	ub, err := b.b.GetForUser(userId)
+	ub, err := b.b.GetBalanceForUser(userId)
 	if err != nil {
 		return nil, err
 	}
@@ -32,6 +41,15 @@ func (b *balanceService) Get(userId string) (*model.Balance, error) {
 }
 
 func (b *balanceService) Withdraw(userId, orderNumber string, sum uint64) error {
+	ub, err := b.b.GetBalanceForUser(userId)
+	if err != nil {
+		return err
+	}
+
+	if sum > uint64(ub.Current) {
+		return ErrInsufficientBalance
+	}
+
 	if err := b.w.AddWithdrawal(userId, model.Withdrawal{OrderNumber: orderNumber, Sum: sum}); err != nil {
 		return err
 	}

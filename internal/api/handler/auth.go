@@ -37,7 +37,7 @@ func (a *auth) SetupRouting(r *chi.Mux, _ middleware.Middleware) {
 func (a *auth) register(w http.ResponseWriter, r *http.Request) {
 	var cred model.Credentials
 	if err := json.NewDecoder(r.Body).Decode(&cred); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 	}
 
 	if err := a.s.Register(cred.Login, cred.Password); err != nil {
@@ -55,17 +55,15 @@ func (a *auth) register(w http.ResponseWriter, r *http.Request) {
 func (a *auth) login(w http.ResponseWriter, r *http.Request) {
 	var cred model.Credentials
 	if err := json.NewDecoder(r.Body).Decode(&cred); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 	}
 
-	uuid, err := a.s.Login(cred.Login, cred.Password)
+	token, err := a.s.Login(cred.Login, cred.Password)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	token, err := a.s.Encrypt(uuid)
-	if err != nil {
+		if errors.Is(err, service.ErrWrongCredentials) {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		}
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

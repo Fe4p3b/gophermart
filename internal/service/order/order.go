@@ -1,6 +1,7 @@
 package order
 
 import (
+	"errors"
 	"time"
 
 	"github.com/Fe4p3b/gophermart/internal/api/accrual"
@@ -10,6 +11,11 @@ import (
 )
 
 var _ OrderService = (*orderService)(nil)
+
+var (
+	ErrOrderForUserExists        error = errors.New("order for user already exists")
+	ErrOrderExistsForAnotherUser error = errors.New("order already exists for another user")
+)
 
 type OrderService interface {
 	List(string) ([]model.Order, error)

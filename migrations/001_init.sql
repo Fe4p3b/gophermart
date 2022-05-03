@@ -11,7 +11,8 @@ CREATE TABLE IF NOT EXISTS gophermart.orders(
     user_id uuid NOT NULL REFERENCES gophermart.users(id),
     status INT NOT NULL,
     accrual INT,
-    upload_date TIMESTAMP WITH TIME ZONE
+    upload_date TIMESTAMP WITH TIME ZONE,
+    UNIQUE (number, user_id)
 );
 
 CREATE TABLE IF NOT EXISTS gophermart.balances(

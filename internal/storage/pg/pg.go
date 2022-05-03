@@ -8,6 +8,8 @@ import (
 
 	"github.com/Fe4p3b/gophermart/internal/model"
 	"github.com/Fe4p3b/gophermart/internal/service/auth"
+	"github.com/Fe4p3b/gophermart/internal/service/balance"
+	"github.com/Fe4p3b/gophermart/internal/service/order"
 	"github.com/Fe4p3b/gophermart/internal/storage"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
@@ -149,6 +151,22 @@ func (p *pg) AddAccrual(o *model.Order) error {
 
 	sql := `INSERT INTO gophermart.orders(user_id, number, status, accrual, upload_date) VALUES ($1, $2, $3, $4, $5)`
 	if _, err := tx.ExecContext(ctx, sql, o.UserID, o.Number, o.Status, o.Accrual, o.UploadDate); err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
+			sql := `SELECT user_id FROM gophermart.orders WHERE number=$1`
+			row := p.db.QueryRowContext(ctx, sql, o.Number)
+
+			var userId string
+			if err = row.Scan(&userId); err != nil {
+				return err
+			}
+
+			if o.UserID != userId {
+				return order.ErrOrderExistsForAnotherUser
+			}
+			return order.ErrOrderForUserExists
+		}
+
 		return err
 	}
 
@@ -164,7 +182,7 @@ func (p *pg) AddAccrual(o *model.Order) error {
 	return nil
 }
 
-func (p *pg) GetForUser(u string) (*model.Balance, error) {
+func (p *pg) GetBalanceForUser(u string) (*model.Balance, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -197,6 +215,11 @@ func (p *pg) AddWithdrawal(u string, w model.Withdrawal) error {
 	sql := `INSERT INTO gophermart.withdrawals(user_id, order_number, sum, date) VALUES($1, $2, $3, $4)`
 
 	if _, err := tx.ExecContext(ctx, sql, u, w.OrderNumber, w.Sum, w.Date); err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.ForeignKeyViolation {
+			return balance.ErrNoOrder
+		}
+
 		return err
 	}
 

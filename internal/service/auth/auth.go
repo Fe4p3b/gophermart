@@ -24,9 +24,7 @@ var (
 type AuthService interface {
 	Register(string, string) error
 	Login(string, string) (string, error)
-	VerifyUser(string) error
-	Encrypt(src string) (string, error)
-	Decrypt(src string) ([]byte, error)
+	VerifyUser(string) (string, error)
 }
 
 type AuthServiceConfiguration func(as *AuthService) error
@@ -77,11 +75,26 @@ func (a *authService) Login(l string, p string) (string, error) {
 		return "", ErrWrongCredentials
 	}
 
-	return u.ID, nil
+	token, err := a.encrypt(u.ID)
+	if err != nil {
+		return "", err
+	}
+
+	return token, nil
 }
 
-func (a *authService) VerifyUser(user string) error {
-	return a.s.VerifyUser(user)
+func (a *authService) VerifyUser(token string) (string, error) {
+	uuid, err := a.decrypt(token)
+	if err != nil {
+
+		return "", err
+	}
+
+	if err := a.s.VerifyUser(string(uuid)); err != nil {
+		return "", err
+	}
+
+	return string(uuid), nil
 }
 
 func (a *authService) hashPassword(p string) (string, error) {
@@ -93,14 +106,14 @@ func (a *authService) checkPasswordHash(p string, h string) error {
 	return bcrypt.CompareHashAndPassword([]byte(h), []byte(p))
 }
 
-func (a *authService) Encrypt(src string) (string, error) {
+func (a *authService) encrypt(src string) (string, error) {
 	nonce := a.key[len(a.key)-a.aesgcm.NonceSize():]
 	dst := (a.aesgcm.Seal(nil, nonce, []byte(src), nil))
 
 	return fmt.Sprintf("%x", dst), nil
 }
 
-func (a *authService) Decrypt(src string) ([]byte, error) {
+func (a *authService) decrypt(src string) ([]byte, error) {
 	nonce := a.key[len(a.key)-a.aesgcm.NonceSize():]
 	encrypted, err := hex.DecodeString(src)
 	if err != nil {
