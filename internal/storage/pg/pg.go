@@ -156,12 +156,12 @@ func (p *pg) AddAccrual(o *model.Order) error {
 			sql := `SELECT user_id FROM gophermart.orders WHERE number=$1`
 			row := p.db.QueryRowContext(ctx, sql, o.Number)
 
-			var userId string
-			if err = row.Scan(&userId); err != nil {
+			var userID string
+			if err = row.Scan(&userID); err != nil {
 				return err
 			}
 
-			if o.UserID != userId {
+			if o.UserID != userID {
 				return order.ErrOrderExistsForAnotherUser
 			}
 			return order.ErrOrderForUserExists
@@ -256,6 +256,10 @@ func (p *pg) GetWithdrawalsForUser(u string) ([]model.Withdrawal, error) {
 			return nil, err
 		}
 		withdrawals = append(withdrawals, w)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
 	}
 
 	return withdrawals, nil

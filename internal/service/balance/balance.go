@@ -16,7 +16,7 @@ var (
 )
 
 type BalanceService interface {
-	Get(userId string) (*model.Balance, error)
+	Get(userID string) (*model.Balance, error)
 	Withdraw(string, string, uint64) error
 	GetWithdrawals(string) ([]model.Withdrawal, error)
 }
@@ -31,8 +31,8 @@ func New(l *zap.SugaredLogger, b storage.BalanceRepository, w storage.Withdrawal
 	return &balanceService{l: l, b: b, w: w}
 }
 
-func (b *balanceService) Get(userId string) (*model.Balance, error) {
-	ub, err := b.b.GetBalanceForUser(userId)
+func (b *balanceService) Get(userID string) (*model.Balance, error) {
+	ub, err := b.b.GetBalanceForUser(userID)
 	if err != nil {
 		return nil, err
 	}
@@ -40,8 +40,8 @@ func (b *balanceService) Get(userId string) (*model.Balance, error) {
 	return ub, nil
 }
 
-func (b *balanceService) Withdraw(userId, orderNumber string, sum uint64) error {
-	ub, err := b.b.GetBalanceForUser(userId)
+func (b *balanceService) Withdraw(userID, orderNumber string, sum uint64) error {
+	ub, err := b.b.GetBalanceForUser(userID)
 	if err != nil {
 		return err
 	}
@@ -50,14 +50,14 @@ func (b *balanceService) Withdraw(userId, orderNumber string, sum uint64) error 
 		return ErrInsufficientBalance
 	}
 
-	if err := b.w.AddWithdrawal(userId, model.Withdrawal{OrderNumber: orderNumber, Sum: sum}); err != nil {
+	if err := b.w.AddWithdrawal(userID, model.Withdrawal{OrderNumber: orderNumber, Sum: sum}); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (b *balanceService) GetWithdrawals(userId string) ([]model.Withdrawal, error) {
-	w, err := b.w.GetWithdrawalsForUser(userId)
+func (b *balanceService) GetWithdrawals(userID string) ([]model.Withdrawal, error) {
+	w, err := b.w.GetWithdrawalsForUser(userID)
 	if err != nil {
 		return nil, err
 	}

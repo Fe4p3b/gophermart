@@ -32,8 +32,8 @@ func New(l *zap.SugaredLogger, s storage.OrderRepository, a accrual.AccrualAcqui
 	return &orderService{l: l, s: s, a: a}
 }
 
-func (o *orderService) List(userId string) ([]model.Order, error) {
-	orders, err := o.s.GetOrdersForUser(userId)
+func (o *orderService) List(userID string) ([]model.Order, error) {
+	orders, err := o.s.GetOrdersForUser(userID)
 	if err != nil {
 		return nil, err
 	}
@@ -41,8 +41,8 @@ func (o *orderService) List(userId string) ([]model.Order, error) {
 	return orders, nil
 }
 
-func (o *orderService) AddAccrual(userId, number string) error {
-	order := &model.Order{UserID: userId, Number: number, Status: model.StatusProcessing, UploadDate: time.Now()}
+func (o *orderService) AddAccrual(userID, number string) error {
+	order := &model.Order{UserID: userID, Number: number, Status: model.StatusProcessing, UploadDate: time.Now()}
 
 	err := o.a.GetAccrual(order)
 	if err != nil {
