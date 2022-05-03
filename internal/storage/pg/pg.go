@@ -143,13 +143,13 @@ func (p *pg) GetOrdersForUser(u string) ([]model.Order, error) {
 			return nil, err
 		}
 
-		fmt.Printf("order - %v, status - %s", o, s)
 		status, err := model.ToOrderStatus(s)
 		if err != nil {
 			return nil, err
 		}
 		o.Status = status
 		orders = append(orders, o)
+		fmt.Printf("orders - %v", orders)
 	}
 
 	if err = rows.Err(); err != nil {
