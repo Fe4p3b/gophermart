@@ -49,6 +49,8 @@ func (o *orderService) AddOrder(userID, number string) error {
 		return err
 	}
 
+	o.l.Infow("getAccrual", "order", order)
+
 	if err := o.s.AddOrder(order); err != nil {
 		return err
 	}
