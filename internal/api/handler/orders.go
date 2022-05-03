@@ -91,10 +91,10 @@ func (o *order) addBonus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if isLuhnValid := luhn.Luhn(b); !isLuhnValid {
-		w.WriteHeader(http.StatusUnprocessableEntity)
-		return
-	}
+	// if isLuhnValid := luhn.Luhn(b); !isLuhnValid {
+	// 	w.WriteHeader(http.StatusUnprocessableEntity)
+	// 	return
+	// }
 
 	if err := o.s.AddAccrual(user, string(b)); err != nil {
 		if errors.Is(err, service.ErrOrderForUserExists) {
