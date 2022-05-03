@@ -38,6 +38,8 @@ func (o *order) SetupRouting(r *chi.Mux, m middleware.Middleware) {
 }
 
 func (o *order) getOrders(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
 	user, ok := r.Context().Value(middleware.Key).(string)
 	if !ok {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -68,7 +70,6 @@ func (o *order) getOrders(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(b)
 }
