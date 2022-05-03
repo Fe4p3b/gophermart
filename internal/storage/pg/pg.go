@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"os"
 	"time"
 
 	"github.com/Fe4p3b/gophermart/internal/model"
@@ -34,6 +35,23 @@ func New(dsn string) (*pg, error) {
 	}
 
 	return &pg{db: conn}, nil
+}
+
+func (p *pg) InitialMigration() error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
+	sql, err := os.ReadFile("./migrations/001_init.sql")
+	if err != nil {
+		return err
+	}
+
+	_, err = p.db.ExecContext(ctx, string(sql))
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (p *pg) AddUser(u *model.User) error {

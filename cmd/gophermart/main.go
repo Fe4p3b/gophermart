@@ -43,6 +43,10 @@ func main() {
 		log.Fatal(err)
 	}
 
+	if err := db.InitialMigration(); err != nil {
+		log.Fatal(err)
+	}
+
 	accrual := accrual.New(sugaredLogger, cfg.AccrualURL)
 
 	as, err := authService.NewAuth(sugaredLogger, db, 14, []byte(cfg.Secret))
