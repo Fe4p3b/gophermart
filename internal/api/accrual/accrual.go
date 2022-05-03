@@ -16,6 +16,7 @@ var (
 	_ AccrualAcquirer = (*accrual)(nil)
 
 	ErrTooManyRequests error = errors.New("too many requests")
+	ErrNoOrder         error = errors.New("order no order")
 )
 
 type AccrualAcquirer interface {
@@ -48,9 +49,8 @@ func (a *accrual) GetAccrual(o *model.Order) (int, error) {
 	}
 
 	if resp.StatusCode == http.StatusNoContent {
-		return 0, nil
+		return 0, ErrNoOrder
 	}
-	a.l.Infof("before accrual - %v", o)
 
 	var order apiModel.Order
 	if err := json.NewDecoder(resp.Body).Decode(&order); err != nil {
@@ -58,7 +58,6 @@ func (a *accrual) GetAccrual(o *model.Order) (int, error) {
 	}
 	defer resp.Body.Close()
 
-	a.l.Infof("got order - %v", order)
 	status, err := model.ToOrderStatus(order.Status)
 	if err != nil {
 		return 0, err
@@ -66,6 +65,5 @@ func (a *accrual) GetAccrual(o *model.Order) (int, error) {
 	o.Status = status
 	o.Accrual = uint32(order.Accrual * 100)
 
-	a.l.Infof("after accrual - %v", o)
 	return 0, nil
 }
