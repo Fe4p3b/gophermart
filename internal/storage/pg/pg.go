@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 	"os"
 	"time"
 
@@ -143,7 +142,6 @@ func (p *pg) GetOrdersForUser(u string) ([]model.Order, error) {
 			return nil, err
 		}
 
-		fmt.Printf("GetOrdersForUser - %v, status - %s", o, s)
 		status, err := model.ToOrderStatus(s)
 		if err != nil {
 			return nil, err

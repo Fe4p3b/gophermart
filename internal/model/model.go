@@ -44,6 +44,7 @@ const (
 	StatusProcessing
 	StatusInvalid
 	StatusProcessed
+	StatusRegistered
 )
 
 func ToOrderStatus(s string) (OrderStatus, error) {
@@ -56,6 +57,8 @@ func ToOrderStatus(s string) (OrderStatus, error) {
 		return StatusProcessed, nil
 	case "INVALID":
 		return StatusInvalid, nil
+	case "REGISTERED":
+		return StatusRegistered, nil
 	}
 	return 0, ErrUnknownStatus
 }
@@ -70,6 +73,8 @@ func (o OrderStatus) String() string {
 		return "PROCESSED"
 	case StatusInvalid:
 		return "INVALID"
+	case StatusRegistered:
+		return "REGISTERED"
 	default:
 		return fmt.Sprintf("status unknown - %d", o)
 	}
