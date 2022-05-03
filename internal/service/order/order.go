@@ -57,8 +57,10 @@ func (o *orderService) AddOrder(userID, number string) error {
 					continue
 				}
 				o.l.Errorw("error getting accrual", "order", order, "error", err)
-				return
+				continue
 			}
+
+			o.l.Infow("GetAccrual", "order", order)
 
 			if err := o.s.UpdateOrder(order); err != nil {
 				o.l.Errorw("error adding accrual", "order", order, "error", err)
