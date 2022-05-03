@@ -49,7 +49,8 @@ func main() {
 
 	accrual := accrual.New(sugaredLogger, cfg.AccrualURL)
 
-	as, err := authService.NewAuth(sugaredLogger, db, 14, []byte(cfg.Secret))
+	us := pg.NewUserStorage(db)
+	as, err := authService.NewAuth(sugaredLogger, us, 14, []byte(cfg.Secret))
 	if err != nil {
 		sugaredLogger.Fatalw("error creating auth service", "error", err)
 	}

@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/Fe4p3b/gophermart/internal/model"
-	"github.com/Fe4p3b/gophermart/internal/service/auth"
 	"github.com/Fe4p3b/gophermart/internal/service/balance"
 	"github.com/Fe4p3b/gophermart/internal/service/order"
 	"github.com/Fe4p3b/gophermart/internal/storage"
@@ -19,7 +18,7 @@ import (
 )
 
 var (
-	_ storage.UserRepository       = (*pg)(nil)
+	// _ storage.UserRepository       = (*pg)(nil)
 	_ storage.OrderRepository      = (*pg)(nil)
 	_ storage.BalanceRepository    = (*pg)(nil)
 	_ storage.WithdrawalRepository = (*pg)(nil)
@@ -49,73 +48,6 @@ func (p *pg) InitialMigration() error {
 
 	_, err = p.db.ExecContext(ctx, string(sql))
 	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (p *pg) AddUser(u *model.User) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	tx, err := p.db.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	sql := `INSERT INTO gophermart.users(login, password) VALUES($1, $2) RETURNING id`
-
-	row := tx.QueryRowContext(ctx, sql, u.Login, u.Passord)
-
-	if err := row.Scan(&u.ID); err != nil {
-		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
-			return auth.ErrUserExists
-		}
-
-		return err
-	}
-
-	sql = `INSERT INTO gophermart.balances(user_id) VALUES($1)`
-	_, err = tx.ExecContext(ctx, sql, u.ID)
-	if err != nil {
-		return err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return err
-	}
-
-	return err
-}
-
-func (p *pg) GetUserByLogin(l string) (*model.User, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	sql := `SELECT id, login, password FROM gophermart.users WHERE login = $1`
-
-	var u model.User
-	row := p.db.QueryRowContext(ctx, sql, l)
-	if err := row.Scan(&u.ID, &u.Login, &u.Passord); err != nil {
-		return nil, err
-	}
-
-	return &u, nil
-}
-
-func (p *pg) VerifyUser(u string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	sql := `SELECT id FROM gophermart.users WHERE id=$1`
-
-	row := p.db.QueryRowContext(ctx, sql, u)
-	var uuid string
-
-	if err := row.Scan(&uuid); err != nil {
 		return err
 	}
 
