@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"strconv"
 
@@ -49,14 +48,8 @@ func (a *accrual) GetAccrual(o *model.Order) (int, error) {
 		return n, ErrTooManyRequests
 	}
 
-	if resp.StatusCode == http.StatusNoContent {
-		b, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return 0, err
-		}
-		a.l.Infof("status no content %v", b)
-
-		return 0, ErrNoOrder
+	if resp.StatusCode == http.StatusOK {
+		return 0, nil
 	}
 
 	var order apiModel.Order
