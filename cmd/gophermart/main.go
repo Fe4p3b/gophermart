@@ -50,16 +50,16 @@ func main() {
 	accrual := accrual.New(sugaredLogger, cfg.AccrualURL)
 
 	us := pg.NewUserStorage(db)
+	os := pg.NewOrderStorage(db)
+
 	as, err := authService.NewAuth(sugaredLogger, us, 14, []byte(cfg.Secret))
 	if err != nil {
 		sugaredLogger.Fatalw("error creating auth service", "error", err)
 	}
-	os := orderService.New(sugaredLogger, db, accrual)
-	bs := balanceService.New(sugaredLogger, db, db)
 
 	ah := handler.NewAuth(sugaredLogger, as)
-	oh := handler.NewOrder(sugaredLogger, os)
-	bh := handler.NewBalance(sugaredLogger, bs)
+	oh := handler.NewOrder(sugaredLogger, orderService.New(sugaredLogger, os, accrual))
+	bh := handler.NewBalance(sugaredLogger, balanceService.New(sugaredLogger, db, db))
 
 	m := middleware.NewAuthMiddleware(as)
 
