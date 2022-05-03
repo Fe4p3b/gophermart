@@ -60,7 +60,7 @@ func (o *order) getOrders(w http.ResponseWriter, r *http.Request) {
 	jsonOrders := make([]model.Order, 0)
 
 	for _, v := range orders {
-		jsonOrders = append(jsonOrders, model.Order{Number: v.Number, Status: v.Status.String(), Accrual: v.Accrual, UploadDate: v.UploadDate.Format(time.RFC3339)})
+		jsonOrders = append(jsonOrders, model.Order{Number: v.Number, Status: v.Status.String(), Accrual: float64(v.Accrual) / 100, UploadDate: v.UploadDate.Format(time.RFC3339)})
 	}
 
 	b, err := json.Marshal(jsonOrders)
@@ -97,6 +97,7 @@ func (o *order) addOrder(w http.ResponseWriter, r *http.Request) {
 	// }
 
 	if err := o.s.AddOrder(user, string(b)); err != nil {
+		o.l.Errorw("AddOrder", "error", err)
 		if errors.Is(err, service.ErrOrderForUserExists) {
 			w.WriteHeader(http.StatusOK)
 			return

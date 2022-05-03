@@ -12,10 +12,10 @@ type Credentials struct {
 }
 
 type Order struct {
-	Number     string `json:"number"`
-	Status     string `json:"status"`
-	Accrual    uint32 `json:"accrual"`
-	UploadDate string `json:"uploaded_at"`
+	Number     string  `json:"number"`
+	Status     string  `json:"status"`
+	Accrual    float64 `json:"accrual"`
+	UploadDate string  `json:"uploaded_at"`
 }
 
 type Balance struct {
@@ -24,13 +24,13 @@ type Balance struct {
 }
 
 type Withdrawal struct {
-	Order       string `json:"order"`
-	Sum         uint64 `json:"sum"`
-	ProcessedAt string `json:"processed_at"`
+	Order       string  `json:"order"`
+	Sum         float64 `json:"sum"`
+	ProcessedAt string  `json:"processed_at"`
 }
 
 func ToAPIWithdrawal(w model.Withdrawal) Withdrawal {
-	return Withdrawal{Order: w.OrderNumber, Sum: w.Sum, ProcessedAt: w.Date.Format(time.RFC3339)}
+	return Withdrawal{Order: w.OrderNumber, Sum: float64(w.Sum) / 100, ProcessedAt: w.Date.Format(time.RFC3339)}
 }
 
 func ToAPIWithdrawals(withdrawals []model.Withdrawal) []Withdrawal {

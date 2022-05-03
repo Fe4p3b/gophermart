@@ -17,7 +17,7 @@ type User struct {
 type Balance struct {
 	ID        string
 	UserID    string
-	Current   uint32
+	Current   uint64
 	Withdrawn uint64
 }
 

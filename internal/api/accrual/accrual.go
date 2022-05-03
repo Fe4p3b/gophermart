@@ -58,12 +58,13 @@ func (a *accrual) GetAccrual(o *model.Order) (int, error) {
 	}
 	defer resp.Body.Close()
 
+	a.l.Infof("got order - %v", order)
 	status, err := model.ToOrderStatus(order.Status)
 	if err != nil {
 		return 0, err
 	}
 	o.Status = status
-	o.Accrual = order.Accrual * 100
+	o.Accrual = uint32(order.Accrual * 100)
 
 	a.l.Infof("after accrual - %v", o)
 	return 0, nil

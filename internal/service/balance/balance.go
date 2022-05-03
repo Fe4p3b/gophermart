@@ -17,7 +17,7 @@ var (
 
 type BalanceService interface {
 	Get(userID string) (*model.Balance, error)
-	Withdraw(string, string, uint64) error
+	Withdraw(string, string, float64) error
 	GetWithdrawals(string) ([]model.Withdrawal, error)
 }
 
@@ -40,17 +40,18 @@ func (b *balanceService) Get(userID string) (*model.Balance, error) {
 	return ub, nil
 }
 
-func (b *balanceService) Withdraw(userID, orderNumber string, sum uint64) error {
+func (b *balanceService) Withdraw(userID, orderNumber string, sum float64) error {
 	ub, err := b.b.GetBalanceForUser(userID)
 	if err != nil {
 		return err
 	}
 
-	if sum > uint64(ub.Current) {
+	s := uint64(sum * 100)
+	if s > ub.Current {
 		return ErrInsufficientBalance
 	}
 
-	if err := b.w.AddWithdrawal(userID, model.Withdrawal{OrderNumber: orderNumber, Sum: sum}); err != nil {
+	if err := b.w.AddWithdrawal(userID, model.Withdrawal{OrderNumber: orderNumber, Sum: s}); err != nil {
 		return err
 	}
 	return nil
