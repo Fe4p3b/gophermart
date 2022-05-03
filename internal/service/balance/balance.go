@@ -48,11 +48,10 @@ func (b *balanceService) Withdraw(userID, orderNumber string, sum float64) error
 
 	s := uint64(sum * 100)
 	if s > ub.Current {
-		b.l.Errorw("Withdraw", "current", ub.Current, "sum", s)
 		return ErrInsufficientBalance
 	}
 
-	if err := b.w.AddWithdrawal(userID, model.Withdrawal{OrderNumber: orderNumber, Sum: s}); err != nil {
+	if err := b.w.AddWithdrawal(model.Withdrawal{OrderNumber: orderNumber, Sum: s, UserID: userID}); err != nil {
 		return err
 	}
 	return nil

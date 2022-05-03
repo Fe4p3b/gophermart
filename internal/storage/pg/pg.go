@@ -230,7 +230,7 @@ GROUP BY b.id`
 	return &balance, nil
 }
 
-func (p *pg) AddWithdrawal(u string, w model.Withdrawal) error {
+func (p *pg) AddWithdrawal(w model.Withdrawal) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -242,8 +242,8 @@ func (p *pg) AddWithdrawal(u string, w model.Withdrawal) error {
 
 	sql := `INSERT INTO gophermart.withdrawals(user_id, order_number, sum, date) VALUES($1, $2, $3, $4)`
 
-	if _, err := tx.ExecContext(ctx, sql, u, w.OrderNumber, w.Sum, w.Date); err != nil {
-		log.Printf("AddWithdrawal - %s", err)
+	if _, err := tx.ExecContext(ctx, sql, w.UserID, w.OrderNumber, w.Sum, w.Date); err != nil {
+		log.Printf("AddWithdrawal - %s, %v", err, w)
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.ForeignKeyViolation {
 			return balance.ErrNoOrder
@@ -254,7 +254,7 @@ func (p *pg) AddWithdrawal(u string, w model.Withdrawal) error {
 
 	sql = `UPDATE gophermart.balances SET current=current-$1 WHERE user_id=$2`
 
-	if _, err := tx.ExecContext(ctx, sql, w.Sum, u); err != nil {
+	if _, err := tx.ExecContext(ctx, sql, w.Sum, w.UserID); err != nil {
 		return err
 	}
 

@@ -20,6 +20,6 @@ type BalanceRepository interface {
 }
 
 type WithdrawalRepository interface {
-	AddWithdrawal(string, model.Withdrawal) error
+	AddWithdrawal(model.Withdrawal) error
 	GetWithdrawalsForUser(string) ([]model.Withdrawal, error)
 }
