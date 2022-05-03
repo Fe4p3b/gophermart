@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/Fe4p3b/gophermart/internal/model"
 	"github.com/Fe4p3b/gophermart/internal/storage"
@@ -22,7 +23,7 @@ var (
 )
 
 type AuthService interface {
-	Register(string, string) error
+	Register(string, string) (string, error)
 	Login(string, string) (string, error)
 	VerifyUser(string) (string, error)
 }
@@ -52,17 +53,24 @@ func NewAuth(l *zap.SugaredLogger, s storage.UserRepository, c int, k []byte) (*
 	return &authService{l: l, s: s, hashCost: c, key: authKey, aesgcm: aesgcm}, nil
 }
 
-func (a *authService) Register(l string, p string) error {
+func (a *authService) Register(l string, p string) (string, error) {
 	hash, err := a.hashPassword(p)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	if err := a.s.AddUser(&model.User{Login: l, Passord: string(hash)}); err != nil {
-		return err
+	u := &model.User{Login: l, Passord: string(hash)}
+
+	if err := a.s.AddUser(u); err != nil {
+		return "", err
+	}
+	log.Println(u)
+	token, err := a.encrypt(u.ID)
+	if err != nil {
+		return "", err
 	}
 
-	return nil
+	return token, nil
 }
 
 func (a *authService) Login(l string, p string) (string, error) {

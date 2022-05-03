@@ -40,7 +40,8 @@ func (a *auth) register(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 	}
 
-	if err := a.s.Register(cred.Login, cred.Password); err != nil {
+	token, err := a.s.Register(cred.Login, cred.Password)
+	if err != nil {
 		if errors.Is(err, service.ErrUserExists) {
 			http.Error(w, http.StatusText(http.StatusConflict), http.StatusConflict)
 			return
@@ -49,6 +50,7 @@ func (a *auth) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	http.SetCookie(w, &http.Cookie{Name: "token", Value: token})
 	w.WriteHeader(http.StatusOK)
 }
 
