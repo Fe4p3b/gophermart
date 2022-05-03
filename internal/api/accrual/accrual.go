@@ -2,6 +2,7 @@ package accrual
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -11,6 +12,8 @@ import (
 
 var (
 	_ AccrualAcquirer = (*accrual)(nil)
+
+	ErrTooManyRequests error = errors.New("too many requests")
 )
 
 type AccrualAcquirer interface {
@@ -32,10 +35,16 @@ func (a *accrual) GetAccrual(o *model.Order) error {
 		return err
 	}
 
+	if resp.StatusCode == http.StatusTooManyRequests {
+		return ErrTooManyRequests
+	}
+
+	a.l.Infof("before accrual - %v", o)
 	if err := json.NewDecoder(resp.Body).Decode(&o); err != nil {
 		return err
 	}
 	defer resp.Body.Close()
+	a.l.Infof("after accrual - %v", o)
 
 	return nil
 }
