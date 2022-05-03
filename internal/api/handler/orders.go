@@ -19,8 +19,8 @@ var _ Handler = (*order)(nil)
 var _ Order = (*order)(nil)
 
 type Order interface {
-	getOrders(w http.ResponseWriter, r *http.Request)
-	addOrder(w http.ResponseWriter, r *http.Request)
+	GetOrders(w http.ResponseWriter, r *http.Request)
+	AddOrder(w http.ResponseWriter, r *http.Request)
 }
 
 type order struct {
@@ -33,11 +33,11 @@ func NewOrder(l *zap.SugaredLogger, s service.OrderService) *order {
 }
 
 func (o *order) SetupRouting(r *chi.Mux, m middleware.Middleware) {
-	r.Get("/api/user/orders", m.Middleware(o.getOrders))
-	r.Post("/api/user/orders", m.Middleware(o.addOrder))
+	r.Get("/api/user/orders", m.Middleware(o.GetOrders))
+	r.Post("/api/user/orders", m.Middleware(o.AddOrder))
 }
 
-func (o *order) getOrders(w http.ResponseWriter, r *http.Request) {
+func (o *order) GetOrders(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	user, ok := r.Context().Value(middleware.Key).(string)
@@ -76,7 +76,7 @@ func (o *order) getOrders(w http.ResponseWriter, r *http.Request) {
 	w.Write(b)
 }
 
-func (o *order) addOrder(w http.ResponseWriter, r *http.Request) {
+func (o *order) AddOrder(w http.ResponseWriter, r *http.Request) {
 	user, ok := r.Context().Value(middleware.Key).(string)
 	if !ok {
 		o.l.Error("error getting user uuid from context")

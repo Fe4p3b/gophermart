@@ -15,6 +15,7 @@ import (
 	authService "github.com/Fe4p3b/gophermart/internal/service/auth"
 	balanceService "github.com/Fe4p3b/gophermart/internal/service/balance"
 	orderService "github.com/Fe4p3b/gophermart/internal/service/order"
+	withdrawalService "github.com/Fe4p3b/gophermart/internal/service/withdrawal"
 	"github.com/Fe4p3b/gophermart/internal/storage/pg"
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
@@ -59,14 +60,16 @@ func main() {
 		sugaredLogger.Fatalw("error creating auth service", "error", err)
 	}
 
+	bService := balanceService.New(sugaredLogger, bs)
 	ah := handler.NewAuth(sugaredLogger, as)
 	oh := handler.NewOrder(sugaredLogger, orderService.New(sugaredLogger, os, accrual))
-	bh := handler.NewBalance(sugaredLogger, balanceService.New(sugaredLogger, bs, ws))
+	bh := handler.NewBalance(sugaredLogger, bService)
+	wh := handler.NewWithdrawal(sugaredLogger, withdrawalService.New(sugaredLogger, ws, bService))
 
 	m := middleware.NewAuthMiddleware(as)
 
 	h := handler.New(sugaredLogger)
-	h.SetupRouting(r, m, ah, oh, bh)
+	h.SetupRouting(r, m, ah, oh, bh, wh)
 
 	srv := http.Server{Addr: cfg.Address, Handler: r}
 

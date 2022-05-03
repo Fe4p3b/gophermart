@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/Fe4p3b/gophermart/internal/model"
-	"github.com/Fe4p3b/gophermart/internal/service/balance"
+	"github.com/Fe4p3b/gophermart/internal/service/withdrawal"
 	"github.com/Fe4p3b/gophermart/internal/storage"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
@@ -41,7 +41,7 @@ func (ws *WithdrawalStorage) AddWithdrawal(w model.Withdrawal) error {
 		log.Printf("AddWithdrawal - %v, %v", err, w)
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.ForeignKeyViolation {
-			return balance.ErrNoOrder
+			return withdrawal.ErrNoOrder
 		}
 
 		return err

@@ -16,8 +16,8 @@ var _ Handler = (*auth)(nil)
 var _ Auth = (*auth)(nil)
 
 type Auth interface {
-	register(w http.ResponseWriter, r *http.Request)
-	login(w http.ResponseWriter, r *http.Request)
+	Register(w http.ResponseWriter, r *http.Request)
+	Login(w http.ResponseWriter, r *http.Request)
 }
 
 type auth struct {
@@ -30,11 +30,11 @@ func NewAuth(l *zap.SugaredLogger, s service.AuthService) *auth {
 }
 
 func (a *auth) SetupRouting(r *chi.Mux, _ middleware.Middleware) {
-	r.Post("/api/user/register", a.register)
-	r.Post("/api/user/login", a.login)
+	r.Post("/api/user/register", a.Register)
+	r.Post("/api/user/login", a.Login)
 }
 
-func (a *auth) register(w http.ResponseWriter, r *http.Request) {
+func (a *auth) Register(w http.ResponseWriter, r *http.Request) {
 	var cred model.Credentials
 	if err := json.NewDecoder(r.Body).Decode(&cred); err != nil {
 		a.l.Errorw("error decoding body", "error", err)
@@ -57,7 +57,7 @@ func (a *auth) register(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (a *auth) login(w http.ResponseWriter, r *http.Request) {
+func (a *auth) Login(w http.ResponseWriter, r *http.Request) {
 	var cred model.Credentials
 	if err := json.NewDecoder(r.Body).Decode(&cred); err != nil {
 		a.l.Errorw("error decoding body", "error", err)
