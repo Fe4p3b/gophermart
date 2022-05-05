@@ -47,7 +47,7 @@ func (o *order) GetOrders(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	orders, err := o.s.List(user)
+	orders, err := o.s.List(r.Context(), user)
 	if err != nil {
 		o.l.Errorw("error listing orders", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -101,7 +101,7 @@ func (o *order) AddOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := o.s.AddOrder(user, string(b)); err != nil {
+	if err := o.s.AddOrder(r.Context(), user, string(b)); err != nil {
 		if errors.Is(err, service.ErrOrderForUserExists) {
 			w.WriteHeader(http.StatusOK)
 			return

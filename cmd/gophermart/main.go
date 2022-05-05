@@ -40,7 +40,7 @@ func main() {
 
 	r := chi.NewRouter()
 
-	r.Use(chiMiddleware.Compress(5))
+	r.Use(chiMiddleware.Compress(5), middleware.ContextMiddleware)
 
 	db, err := pg.New(cfg.DatabaseURI, cfg.MigrationsFolder)
 	if err != nil {

@@ -2,7 +2,6 @@ package pg
 
 import (
 	"context"
-	"time"
 
 	"github.com/Fe4p3b/gophermart/internal/model"
 	"github.com/Fe4p3b/gophermart/internal/storage"
@@ -20,10 +19,7 @@ func NewBalanceStorage(pg *pg) *BalanceStorage {
 	return &BalanceStorage{pg: pg}
 }
 
-func (bs *BalanceStorage) GetBalanceForUser(u string) (*model.Balance, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
+func (bs *BalanceStorage) GetBalanceForUser(ctx context.Context, u string) (*model.Balance, error) {
 	sql := `SELECT b.id, b.user_id, b.current, COALESCE(SUM(w.sum),0) as withdrawn
 FROM gophermart.balances as b
 LEFT JOIN gophermart.withdrawals as w

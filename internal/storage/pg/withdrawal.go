@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"log"
-	"time"
 
 	"github.com/Fe4p3b/gophermart/internal/model"
 	"github.com/Fe4p3b/gophermart/internal/service/withdrawal"
@@ -25,10 +24,7 @@ func NewWithdrawalStorage(pg *pg) *WithdrawalStorage {
 	return &WithdrawalStorage{pg: pg}
 }
 
-func (ws *WithdrawalStorage) AddWithdrawal(w model.Withdrawal) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
+func (ws *WithdrawalStorage) AddWithdrawal(ctx context.Context, w model.Withdrawal) error {
 	tx, err := ws.pg.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -60,10 +56,7 @@ func (ws *WithdrawalStorage) AddWithdrawal(w model.Withdrawal) error {
 	return nil
 }
 
-func (ws *WithdrawalStorage) GetWithdrawalsForUser(u string) ([]model.Withdrawal, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
+func (ws *WithdrawalStorage) GetWithdrawalsForUser(ctx context.Context, u string) ([]model.Withdrawal, error) {
 	sql := `SELECT id, order_number, sum, date FROM gophermart.withdrawals WHERE user_id = $1`
 
 	rows, err := ws.pg.db.QueryContext(ctx, sql, u)

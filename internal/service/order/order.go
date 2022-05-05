@@ -1,6 +1,7 @@
 package order
 
 import (
+	"context"
 	"errors"
 	"time"
 
@@ -18,8 +19,8 @@ var (
 )
 
 type OrderService interface {
-	List(string) ([]model.Order, error)
-	AddOrder(string, string) error
+	List(context.Context, string) ([]model.Order, error)
+	AddOrder(context.Context, string, string) error
 }
 
 type orderService struct {
@@ -32,8 +33,8 @@ func New(l *zap.SugaredLogger, s storage.OrderRepository, a accrual.AccrualAcqui
 	return &orderService{l: l, s: s, a: a}
 }
 
-func (o *orderService) List(userID string) ([]model.Order, error) {
-	orders, err := o.s.GetOrdersForUser(userID)
+func (o *orderService) List(ctx context.Context, userID string) ([]model.Order, error) {
+	orders, err := o.s.GetOrdersForUser(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -41,16 +42,20 @@ func (o *orderService) List(userID string) ([]model.Order, error) {
 	return orders, nil
 }
 
-func (o *orderService) AddOrder(userID, number string) error {
+func (o *orderService) AddOrder(ctx context.Context, userID, number string) error {
 	order := &model.Order{UserID: userID, Number: number, Status: model.StatusNew, UploadDate: time.Now()}
 
-	if err := o.s.AddOrder(order); err != nil {
+	if err := o.s.AddOrder(ctx, order); err != nil {
 		return err
 	}
 
 	go func(l *zap.SugaredLogger, order *model.Order) {
 		for {
 			time.Sleep(5 * time.Second)
+
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+
 			n, err := o.a.GetAccrual(order)
 			if err != nil {
 				if errors.Is(err, accrual.ErrTooManyRequests) {
@@ -67,7 +72,7 @@ func (o *orderService) AddOrder(userID, number string) error {
 
 			o.l.Infow("GetAccrual", "order", order)
 
-			if err := o.s.UpdateOrder(order); err != nil {
+			if err := o.s.UpdateOrder(ctx, order); err != nil {
 				o.l.Errorw("error adding accrual", "order", order, "error", err)
 				return
 			}
@@ -76,7 +81,7 @@ func (o *orderService) AddOrder(userID, number string) error {
 			case model.StatusInvalid:
 				return
 			case model.StatusProcessed:
-				if err := o.s.UpdateBalanceForProcessedOrder(order); err != nil {
+				if err := o.s.UpdateBalanceForProcessedOrder(ctx, order); err != nil {
 					o.l.Errorw("error updating balance", "order", order, "error", err)
 					return
 				}

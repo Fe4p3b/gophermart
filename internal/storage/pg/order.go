@@ -3,7 +3,6 @@ package pg
 import (
 	"context"
 	"errors"
-	"time"
 
 	"github.com/Fe4p3b/gophermart/internal/model"
 	"github.com/Fe4p3b/gophermart/internal/service/order"
@@ -24,10 +23,7 @@ func NewOrderStorage(pg *pg) *OrderStorage {
 	return &OrderStorage{pg: pg}
 }
 
-func (os *OrderStorage) GetOrdersForUser(u string) ([]model.Order, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
+func (os *OrderStorage) GetOrdersForUser(ctx context.Context, u string) ([]model.Order, error) {
 	sql := `SELECT number, user_id, number, status, accrual, upload_date FROM gophermart.orders WHERE user_id = $1`
 
 	rows, err := os.pg.db.QueryContext(ctx, sql, u)
@@ -60,10 +56,7 @@ func (os *OrderStorage) GetOrdersForUser(u string) ([]model.Order, error) {
 	return orders, nil
 }
 
-func (os *OrderStorage) AddOrder(o *model.Order) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
+func (os *OrderStorage) AddOrder(ctx context.Context, o *model.Order) error {
 	sql := `INSERT INTO gophermart.orders(user_id, number, status, accrual, upload_date) VALUES ($1, $2, $3, $4, $5)`
 	if _, err := os.pg.db.ExecContext(ctx, sql, o.UserID, o.Number, o.Status.String(), o.Accrual, o.UploadDate); err != nil {
 		var pgErr *pgconn.PgError
@@ -88,10 +81,7 @@ func (os *OrderStorage) AddOrder(o *model.Order) error {
 	return nil
 }
 
-func (os *OrderStorage) UpdateOrder(o *model.Order) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
+func (os *OrderStorage) UpdateOrder(ctx context.Context, o *model.Order) error {
 	sql := `UPDATE gophermart.orders SET status = $1, accrual = $2 WHERE number = $3`
 
 	if _, err := os.pg.db.ExecContext(ctx, sql, o.Status, o.Accrual, o.Number); err != nil {
@@ -100,10 +90,7 @@ func (os *OrderStorage) UpdateOrder(o *model.Order) error {
 	return nil
 }
 
-func (os *OrderStorage) UpdateBalanceForProcessedOrder(o *model.Order) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
+func (os *OrderStorage) UpdateBalanceForProcessedOrder(ctx context.Context, o *model.Order) error {
 	sql := `UPDATE gophermart.balances SET current = current + $1 WHERE user_id = $2`
 	if _, err := os.pg.db.ExecContext(ctx, sql, o.Accrual, o.UserID); err != nil {
 		return err

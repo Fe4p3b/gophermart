@@ -49,7 +49,7 @@ func (wh *withdrawal) Withdraw(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := wh.s.Withdraw(user, withdrawal.Order, withdrawal.Sum); err != nil {
+	if err := wh.s.Withdraw(r.Context(), user, withdrawal.Order, withdrawal.Sum); err != nil {
 		if errors.Is(err, service.ErrNoOrder) {
 			w.WriteHeader(http.StatusUnprocessableEntity)
 			return
@@ -77,7 +77,7 @@ func (wh *withdrawal) GetWithdrawals(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	withdrawals, err := wh.s.GetWithdrawals(user)
+	withdrawals, err := wh.s.GetWithdrawals(r.Context(), user)
 	if err != nil {
 		wh.l.Errorw("error getting withdrawals", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)

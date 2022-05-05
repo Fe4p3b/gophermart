@@ -1,6 +1,7 @@
 package withdrawal
 
 import (
+	"context"
 	"errors"
 
 	"github.com/Fe4p3b/gophermart/internal/model"
@@ -17,8 +18,8 @@ var (
 )
 
 type WithdrawalService interface {
-	Withdraw(string, string, float64) error
-	GetWithdrawals(string) ([]model.Withdrawal, error)
+	Withdraw(context.Context, string, string, float64) error
+	GetWithdrawals(context.Context, string) ([]model.Withdrawal, error)
 }
 
 type withdrawalService struct {
@@ -31,8 +32,8 @@ func New(l *zap.SugaredLogger, w storage.WithdrawalRepository, b balance.Balance
 	return &withdrawalService{l: l, w: w, b: b}
 }
 
-func (ws *withdrawalService) Withdraw(userID, orderNumber string, sum float64) error {
-	ub, err := ws.b.Get(userID)
+func (ws *withdrawalService) Withdraw(ctx context.Context, userID, orderNumber string, sum float64) error {
+	ub, err := ws.b.Get(ctx, userID)
 	if err != nil {
 		return err
 	}
@@ -42,14 +43,14 @@ func (ws *withdrawalService) Withdraw(userID, orderNumber string, sum float64) e
 		return ErrInsufficientBalance
 	}
 
-	if err := ws.w.AddWithdrawal(model.Withdrawal{OrderNumber: orderNumber, Sum: s, UserID: userID}); err != nil {
+	if err := ws.w.AddWithdrawal(ctx, model.Withdrawal{OrderNumber: orderNumber, Sum: s, UserID: userID}); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (ws *withdrawalService) GetWithdrawals(userID string) ([]model.Withdrawal, error) {
-	w, err := ws.w.GetWithdrawalsForUser(userID)
+func (ws *withdrawalService) GetWithdrawals(ctx context.Context, userID string) ([]model.Withdrawal, error) {
+	w, err := ws.w.GetWithdrawalsForUser(ctx, userID)
 	if err != nil {
 		return nil, err
 	}

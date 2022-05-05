@@ -41,7 +41,7 @@ func (b *balance) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	balance, err := b.s.Get(user)
+	balance, err := b.s.Get(r.Context(), user)
 	if err != nil {
 		b.l.Errorw("error getting user balance", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)

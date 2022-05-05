@@ -41,7 +41,7 @@ func (a *auth) Register(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 	}
 
-	token, err := a.s.Register(cred.Login, cred.Password)
+	token, err := a.s.Register(r.Context(), cred.Login, cred.Password)
 	if err != nil {
 		if errors.Is(err, service.ErrUserExists) {
 			w.WriteHeader(http.StatusConflict)
@@ -64,7 +64,7 @@ func (a *auth) Login(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 	}
 
-	token, err := a.s.Login(cred.Login, cred.Password)
+	token, err := a.s.Login(r.Context(), cred.Login, cred.Password)
 	if err != nil {
 		if errors.Is(err, service.ErrWrongCredentials) {
 			w.WriteHeader(http.StatusUnauthorized)

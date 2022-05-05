@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/sha256"
@@ -22,9 +23,9 @@ var (
 )
 
 type AuthService interface {
-	Register(string, string) (string, error)
-	Login(string, string) (string, error)
-	VerifyUser(string) (string, error)
+	Register(context.Context, string, string) (string, error)
+	Login(context.Context, string, string) (string, error)
+	VerifyUser(context.Context, string) (string, error)
 }
 
 type AuthServiceConfiguration func(as *AuthService) error
@@ -52,7 +53,7 @@ func NewAuth(l *zap.SugaredLogger, s storage.UserRepository, c int, k []byte) (*
 	return &authService{l: l, s: s, hashCost: c, key: authKey, aesgcm: aesgcm}, nil
 }
 
-func (a *authService) Register(l string, p string) (string, error) {
+func (a *authService) Register(ctx context.Context, l string, p string) (string, error) {
 	hash, err := a.hashPassword(p)
 	if err != nil {
 		return "", err
@@ -60,7 +61,7 @@ func (a *authService) Register(l string, p string) (string, error) {
 
 	u := &model.User{Login: l, Passord: string(hash)}
 
-	if err := a.s.AddUser(u); err != nil {
+	if err := a.s.AddUser(ctx, u); err != nil {
 		return "", err
 	}
 
@@ -72,8 +73,8 @@ func (a *authService) Register(l string, p string) (string, error) {
 	return token, nil
 }
 
-func (a *authService) Login(l string, p string) (string, error) {
-	u, err := a.s.GetUserByLogin(l)
+func (a *authService) Login(ctx context.Context, l string, p string) (string, error) {
+	u, err := a.s.GetUserByLogin(ctx, l)
 	if err != nil {
 		return "", err
 	}
@@ -90,14 +91,14 @@ func (a *authService) Login(l string, p string) (string, error) {
 	return token, nil
 }
 
-func (a *authService) VerifyUser(token string) (string, error) {
+func (a *authService) VerifyUser(ctx context.Context, token string) (string, error) {
 	uuid, err := a.decrypt(token)
 	if err != nil {
 
 		return "", err
 	}
 
-	if err := a.s.VerifyUser(string(uuid)); err != nil {
+	if err := a.s.VerifyUser(ctx, string(uuid)); err != nil {
 		return "", err
 	}
 

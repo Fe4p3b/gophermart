@@ -2,8 +2,8 @@ package pg
 
 import (
 	"context"
+	sqlErr "database/sql"
 	"errors"
-	"time"
 
 	"github.com/Fe4p3b/gophermart/internal/model"
 	"github.com/Fe4p3b/gophermart/internal/service/auth"
@@ -23,10 +23,7 @@ type UserStorage struct {
 func NewUserStorage(pg *pg) *UserStorage {
 	return &UserStorage{pg: pg}
 }
-func (us *UserStorage) AddUser(u *model.User) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
+func (us *UserStorage) AddUser(ctx context.Context, u *model.User) error {
 	tx, err := us.pg.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -59,31 +56,31 @@ func (us *UserStorage) AddUser(u *model.User) error {
 	return err
 }
 
-func (us *UserStorage) GetUserByLogin(l string) (*model.User, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
+func (us *UserStorage) GetUserByLogin(ctx context.Context, l string) (*model.User, error) {
 	sql := `SELECT id, login, password FROM gophermart.users WHERE login = $1`
 
 	var u model.User
 	row := us.pg.db.QueryRowContext(ctx, sql, l)
 	if err := row.Scan(&u.ID, &u.Login, &u.Passord); err != nil {
+		if errors.Is(err, sqlErr.ErrNoRows) {
+			return nil, auth.ErrWrongCredentials
+		}
 		return nil, err
 	}
 
 	return &u, nil
 }
 
-func (us *UserStorage) VerifyUser(u string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
+func (us *UserStorage) VerifyUser(ctx context.Context, u string) error {
 	sql := `SELECT id FROM gophermart.users WHERE id=$1`
 
 	row := us.pg.db.QueryRowContext(ctx, sql, u)
 	var uuid string
 
 	if err := row.Scan(&uuid); err != nil {
+		if errors.Is(err, sqlErr.ErrNoRows) {
+			return auth.ErrWrongCredentials
+		}
 		return err
 	}
 

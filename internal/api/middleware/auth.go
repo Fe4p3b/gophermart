@@ -32,7 +32,7 @@ func (a *authMiddleware) Middleware(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		uuid, err := a.auth.VerifyUser(token.Value)
+		uuid, err := a.auth.VerifyUser(r.Context(), token.Value)
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
