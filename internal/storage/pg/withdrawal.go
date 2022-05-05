@@ -3,7 +3,6 @@ package pg
 import (
 	"context"
 	"errors"
-	"log"
 
 	"github.com/Fe4p3b/gophermart/internal/model"
 	"github.com/Fe4p3b/gophermart/internal/service/withdrawal"
@@ -34,7 +33,6 @@ func (ws *WithdrawalStorage) AddWithdrawal(ctx context.Context, w model.Withdraw
 	sql := `INSERT INTO gophermart.withdrawals(user_id, order_number, sum, date) VALUES($1, $2, $3, $4)`
 
 	if _, err := tx.ExecContext(ctx, sql, w.UserID, w.OrderNumber, w.Sum, w.Date); err != nil {
-		log.Printf("AddWithdrawal - %v, %v", err, w)
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.ForeignKeyViolation {
 			return withdrawal.ErrNoOrder

@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"time"
 
@@ -50,7 +49,6 @@ func (p *pg) InitialMigration(folder string) error {
 	defer cancel()
 
 	file := fmt.Sprintf("./%s/001_init.sql", folder)
-	log.Println(file)
 	sql, err := os.ReadFile(file)
 	if err != nil {
 		return err
